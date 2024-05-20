@@ -103,7 +103,6 @@ func (c RoomController) Update() http.HandlerFunc {
 
 		room.Name = ro.Name
 		room.Description = ro.Description
-
 		updatedRoom, err := c.roomService.Update(room)
 		if err != nil {
 			log.Printf("RoomController: %s", err)

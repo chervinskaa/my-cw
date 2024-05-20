@@ -10,7 +10,7 @@ import (
 type RoomService interface {
 	Save(r domain.Room) (domain.Room, error)
 	FindForOrganization(oId uint64) ([]domain.Room, error)
-	Find(id uint64) (domain.Room, error)
+	Find(id uint64) (interface{}, error) // Оновлено тип повернення
 	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
 }
@@ -45,13 +45,12 @@ func (s *roomService) FindForOrganization(oId uint64) ([]domain.Room, error) {
 	return rooms, nil
 }
 
-func (s *roomService) Find(id uint64) (domain.Room, error) {
-	room, err := s.roomRepo.FindById(id)
+func (s *roomService) Find(id uint64) (interface{}, error) {
+	room, err := s.roomRepo.Find(id)
 	if err != nil {
 		log.Printf("RoomService: %s", err)
-		return domain.Room{}, err
+		return nil, err
 	}
-
 	return room, nil
 }
 

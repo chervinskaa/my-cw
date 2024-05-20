@@ -22,7 +22,7 @@ type room struct {
 type RoomRepository interface {
 	Save(o domain.Room) (domain.Room, error)
 	FindForOrganization(oId uint64) ([]domain.Room, error)
-	FindById(id uint64) (domain.Room, error)
+	Find(id uint64) (domain.Room, error)
 	Update(o domain.Room) (domain.Room, error)
 	Delete(id uint64) error
 }
@@ -60,7 +60,7 @@ func (r *roomRepository) FindForOrganization(oId uint64) ([]domain.Room, error) 
 	return res, nil
 }
 
-func (r *roomRepository) FindById(id uint64) (domain.Room, error) {
+func (r *roomRepository) Find(id uint64) (domain.Room, error) {
 	var room room
 	err := r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).One(&room)
 	if err != nil {
