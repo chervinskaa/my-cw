@@ -28,7 +28,7 @@ type device struct {
 type DeviceRepository interface {
 	Save(o domain.Device) (domain.Device, error)
 	FindAll() ([]domain.Device, error)
-	FindById(id uint64) (domain.Device, error)
+	Find(id uint64) (domain.Device, error)
 	Update(o domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
 	UninstallDevice(deviceId uint64) error
@@ -68,7 +68,7 @@ func (r *deviceRepository) FindAll() ([]domain.Device, error) {
 	return res, nil
 }
 
-func (r *deviceRepository) FindById(id uint64) (domain.Device, error) {
+func (r *deviceRepository) Find(id uint64) (domain.Device, error) {
 	var dev device
 	err := r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).One(&dev)
 	if err != nil {

@@ -73,7 +73,7 @@ func (c DeviceController) FindAll() http.HandlerFunc {
 	}
 }
 
-func (c DeviceController) FindById() http.HandlerFunc {
+func (c DeviceController) Find() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
 		if err != nil {
@@ -81,7 +81,7 @@ func (c DeviceController) FindById() http.HandlerFunc {
 			return
 		}
 
-		device, err := c.DeviceService.FindById(id)
+		device, err := c.DeviceService.Find(id)
 		if err != nil {
 			log.Printf("DeviceController: %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

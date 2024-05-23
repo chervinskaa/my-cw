@@ -157,6 +157,40 @@ func RoomRouter(r chi.Router, rc controllers.RoomController, rs app.RoomService)
 	})
 }
 
+func DeviceRouter(r chi.Router, dc controllers.DeviceController, ds app.DeviceService) {
+	opom := middlewares.PathObject("deviceId", controllers.DevKey, ds)
+	r.Route("/devices", func(apiRouter chi.Router) {
+		apiRouter.Post(
+			"/",
+			dc.Save(),
+		)
+		apiRouter.Get(
+			"/",
+			dc.FindAll(),
+		)
+		apiRouter.With(opom).Get(
+			"/{deviceId}",
+			dc.Find(),
+		)
+		apiRouter.With(opom).Put(
+			"/{deviceId}",
+			dc.Update(),
+		)
+		apiRouter.With(opom).Delete(
+			"/{deviceId}",
+			dc.Delete(),
+		)
+		apiRouter.With(opom).Post(
+			"/{deviceId}/install",
+			dc.InstallDevice(),
+		)
+		apiRouter.With(opom).Post(
+			"/{deviceId}/uninstall",
+			dc.UninstallDevice(),
+		)
+	})
+}
+
 func NotFoundJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

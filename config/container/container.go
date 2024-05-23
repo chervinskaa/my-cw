@@ -37,6 +37,7 @@ type Controllers struct {
 	UserController         controllers.UserController
 	OrganizationController controllers.OrganizationController
 	RoomController         controllers.RoomController
+	DeviceController       controllers.DeviceController
 }
 
 func New(conf config.Configuration) Container {
@@ -59,6 +60,7 @@ func New(conf config.Configuration) Container {
 	userController := controllers.NewUserController(userService, authService)
 	organizationController := controllers.NewOrganizationController(organizationService)
 	roomController := controllers.NewRoomController(roomService)
+	deviceController := controllers.NewDeviceController(deviceService)
 
 	authMiddleware := middlewares.AuthMiddleware(tknAuth, authService, userService)
 
@@ -78,6 +80,7 @@ func New(conf config.Configuration) Container {
 			userController,
 			organizationController,
 			roomController,
+			deviceController,
 		},
 	}
 }
