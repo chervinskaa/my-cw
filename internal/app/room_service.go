@@ -10,7 +10,7 @@ import (
 type RoomService interface {
 	Save(r domain.Room) (domain.Room, error)
 	FindForOrganization(oId uint64) ([]domain.Room, error)
-	Find(id uint64) (interface{}, error) // Оновлено тип повернення
+	Find(id uint64) (interface{}, error)
 	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
 }
