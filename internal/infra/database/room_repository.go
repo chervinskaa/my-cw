@@ -20,10 +20,10 @@ type room struct {
 }
 
 type RoomRepository interface {
-	Save(o domain.Room) (domain.Room, error)
+	Save(r domain.Room) (domain.Room, error)
 	FindForOrganization(oId uint64) ([]domain.Room, error)
 	Find(id uint64) (domain.Room, error)
-	Update(o domain.Room) (domain.Room, error)
+	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
 }
 

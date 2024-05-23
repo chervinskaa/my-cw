@@ -26,10 +26,10 @@ type device struct {
 }
 
 type DeviceRepository interface {
-	Save(o domain.Device) (domain.Device, error)
+	Save(d domain.Device) (domain.Device, error)
 	FindAll() ([]domain.Device, error)
 	Find(id uint64) (domain.Device, error)
-	Update(o domain.Device) (domain.Device, error)
+	Update(d domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
 	UninstallDevice(deviceId uint64) error
 	Delete(id uint64) error
@@ -47,15 +47,15 @@ func NewDeviceRepository(dbSession db.Session) DeviceRepository {
 	}
 }
 
-func (r *deviceRepository) Save(o domain.Device) (domain.Device, error) {
-	dev := r.mapDomainToModel(o)
+func (r *deviceRepository) Save(d domain.Device) (domain.Device, error) {
+	dev := r.mapDomainToModel(d)
 	dev.CreatedDate, dev.UpdatedDate = time.Now(), time.Now()
 	err := r.coll.InsertReturning(&dev)
 	if err != nil {
 		return domain.Device{}, err
 	}
-	o = r.mapModelToDomain(dev)
-	return o, nil
+	d = r.mapModelToDomain(dev)
+	return d, nil
 }
 
 func (r *deviceRepository) FindAll() ([]domain.Device, error) {
@@ -74,19 +74,19 @@ func (r *deviceRepository) Find(id uint64) (domain.Device, error) {
 	if err != nil {
 		return domain.Device{}, err
 	}
-	o := r.mapModelToDomain(dev)
-	return o, nil
+	d := r.mapModelToDomain(dev)
+	return d, nil
 }
 
-func (r *deviceRepository) Update(o domain.Device) (domain.Device, error) {
-	dev := r.mapDomainToModel(o)
+func (r *deviceRepository) Update(d domain.Device) (domain.Device, error) {
+	dev := r.mapDomainToModel(d)
 	dev.UpdatedDate = time.Now()
 	err := r.coll.Find(db.Cond{"id": dev.Id, "deleted_date": nil}).Update(&dev)
 	if err != nil {
 		return domain.Device{}, err
 	}
-	o = r.mapModelToDomain(dev)
-	return o, nil
+	d = r.mapModelToDomain(dev)
+	return d, nil
 }
 
 func (r *deviceRepository) InstallDevice(deviceId uint64, roomId uint64) error {
@@ -145,8 +145,8 @@ func (r deviceRepository) mapModelToDomain(d device) domain.Device {
 
 func (r deviceRepository) mapModelToDomainCollection(devs []device) []domain.Device {
 	var devices []domain.Device
-	for _, o := range devs {
-		dev := r.mapModelToDomain(o)
+	for _, d := range devs {
+		dev := r.mapModelToDomain(d)
 		devices = append(devices, dev)
 	}
 	return devices

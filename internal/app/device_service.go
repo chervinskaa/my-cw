@@ -8,10 +8,10 @@ import (
 )
 
 type DeviceService interface {
-	Save(o domain.Device) (domain.Device, error)
+	Save(d domain.Device) (domain.Device, error)
 	FindAll() ([]domain.Device, error)
 	Find(id uint64) (domain.Device, error)
-	Update(o domain.Device) (domain.Device, error)
+	Update(d domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
 	UninstallDevice(deviceId uint64) error
 	Delete(id uint64) error
@@ -27,8 +27,8 @@ func NewDeviceService(dr database.DeviceRepository) DeviceService {
 	}
 }
 
-func (s *deviceService) Save(r domain.Device) (domain.Device, error) {
-	device, err := s.deviceRepo.Save(r)
+func (s *deviceService) Save(d domain.Device) (domain.Device, error) {
+	device, err := s.deviceRepo.Save(d)
 	if err != nil {
 		log.Printf("DeviceService: %s", err)
 		return domain.Device{}, err
@@ -57,8 +57,8 @@ func (s *deviceService) Find(id uint64) (domain.Device, error) {
 	return device, nil
 }
 
-func (s *deviceService) Update(r domain.Device) (domain.Device, error) {
-	device, err := s.deviceRepo.Update(r)
+func (s *deviceService) Update(d domain.Device) (domain.Device, error) {
+	device, err := s.deviceRepo.Update(d)
 	if err != nil {
 		log.Printf("DeviceService: %s", err)
 		return domain.Device{}, err
