@@ -1,8 +1,6 @@
 package resources
 
 import (
-	"time"
-
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
 )
 
@@ -11,12 +9,10 @@ type RoomsDto struct {
 }
 
 type RoomDto struct {
-	Id             uint64    `json:"id"`
-	OrganizationId uint64    `json:"organizationId"`
-	Name           string    `json:"name"`
-	Description    string    `json:"description"`
-	CreatedDate    time.Time `json:"createdDate"`
-	UpdatedDate    time.Time `json:"updatedDate"`
+	Id             uint64 `json:"id"`
+	OrganizationId uint64 `json:"organization_id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
 }
 
 func (d RoomDto) DomainToDto(o domain.Room) RoomDto {
@@ -25,8 +21,6 @@ func (d RoomDto) DomainToDto(o domain.Room) RoomDto {
 		OrganizationId: o.OrganizationId,
 		Name:           o.Name,
 		Description:    o.Description,
-		CreatedDate:    o.CreatedDate,
-		UpdatedDate:    o.UpdatedDate,
 	}
 }
 

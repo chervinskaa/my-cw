@@ -40,7 +40,7 @@ type Controllers struct {
 	DeviceController       controllers.DeviceController
 }
 
-func New(conf config.Configuration) Container {
+func New(conf config.Configuration) (Container, error) {
 	tknAuth := jwtauth.New("HS256", []byte(conf.JwtSecret), nil)
 	sess := getDbSess(conf)
 
@@ -52,8 +52,11 @@ func New(conf config.Configuration) Container {
 
 	userService := app.NewUserService(userRepository)
 	authService := app.NewAuthService(sessionRepository, userRepository, tknAuth, conf.JwtTTL)
-	organizationService := app.NewOrganizationService(organizationRepository)
-	roomService := app.NewRoomService(roomRepository)
+	organizationService := app.NewOrganizationService(organizationRepository, roomRepository)
+	roomService, err := app.NewRoomService(roomRepository, organizationRepository)
+	if err != nil {
+		return Container{}, err
+	}
 	deviceService := app.NewDeviceService(deviceRepository)
 
 	authController := controllers.NewAuthController(authService, userService)
@@ -82,7 +85,7 @@ func New(conf config.Configuration) Container {
 			roomController,
 			deviceController,
 		},
-	}
+	}, nil
 }
 
 func getDbSess(conf config.Configuration) db.Session {

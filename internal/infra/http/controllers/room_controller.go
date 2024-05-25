@@ -19,6 +19,12 @@ type RoomController struct {
 }
 
 func NewRoomController(rs app.RoomService) RoomController {
+	if rs == nil {
+		log.Fatal("NewRoomController: roomService is nil")
+	}
+
+	log.Printf("NewRoomController: roomService is initialized")
+
 	return RoomController{
 		roomService: rs,
 	}
@@ -26,30 +32,40 @@ func NewRoomController(rs app.RoomService) RoomController {
 
 func (c RoomController) Save() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		organization := r.Context().Value(OrgKey).(domain.Organization)
-		ro, err := requests.Bind(r, requests.RoomRequest{}, domain.Room{})
+		user := r.Context().Value(UserKey).(domain.User)
+		room, err := requests.Bind(r, requests.RoomRequest{}, domain.Room{})
 		if err != nil {
-			log.Printf("RoomController: %s", err)
+			log.Printf("OrganizationController: %s", err)
 			BadRequest(w, err)
 			return
 		}
 
-		ro.OrganizationId = organization.Id
-		ro, err = c.roomService.Save(ro)
+		room, err = c.roomService.Save(room, user.Id)
 		if err != nil {
-			log.Printf("RoomController: %s", err)
-			InternalServerError(w, err)
+			log.Printf("OrganizationController: %s", err)
+			if err.Error() == "access denied" {
+				Forbidden(w, err)
+			} else {
+				InternalServerError(w, err)
+			}
 			return
 		}
 
 		var roomDto resources.RoomDto
-		Created(w, roomDto.DomainToDto(ro))
+		Created(w, roomDto.DomainToDto(room))
 	}
 }
 
 func (c RoomController) FindForOrganization() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		organization := r.Context().Value(OrgKey).(domain.Organization)
+		organization, ok := r.Context().Value(OrgKey).(domain.Organization)
+		if !ok || organization.Id == 0 {
+			err := fmt.Errorf("organization not found in context")
+			log.Printf("RoomController: %s", err)
+			InternalServerError(w, err)
+			return
+		}
+
 		rooms, err := c.roomService.FindForOrganization(organization.Id)
 		if err != nil {
 			log.Printf("RoomController: %s", err)

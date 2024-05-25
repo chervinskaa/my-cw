@@ -17,11 +17,13 @@ type OrganizationService interface {
 
 type organizationService struct {
 	organizationRepo database.OrganizationRepository
+	roomRepo         database.RoomRepository
 }
 
-func NewOrganizationService(or database.OrganizationRepository) OrganizationService {
+func NewOrganizationService(or database.OrganizationRepository, rr database.RoomRepository) OrganizationService {
 	return organizationService{
 		organizationRepo: or,
+		roomRepo:         rr,
 	}
 }
 
@@ -47,6 +49,12 @@ func (s organizationService) FindForUser(uId uint64) ([]domain.Organization, err
 
 func (s organizationService) Find(id uint64) (interface{}, error) {
 	org, err := s.organizationRepo.FindById(id)
+	if err != nil {
+		log.Printf("OrganizationService: %s", err)
+		return nil, err
+	}
+
+	org.Rooms, err = s.roomRepo.FindForOrganization(org.Id)
 	if err != nil {
 		log.Printf("OrganizationService: %s", err)
 		return nil, err

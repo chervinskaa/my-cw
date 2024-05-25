@@ -8,7 +8,7 @@ require (
 	github.com/go-chi/jwtauth/v5 v5.1.0
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/golang-migrate/migrate/v4 v4.15.2
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.6.0
 	github.com/lestrrat-go/jwx/v2 v2.0.8
 	github.com/upper/db/v4 v4.6.0
 	golang.org/x/crypto v0.5.0

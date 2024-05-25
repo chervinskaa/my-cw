@@ -5,12 +5,13 @@ import (
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/database"
+	"github.com/google/uuid"
 )
 
 type DeviceService interface {
 	Save(d domain.Device) (domain.Device, error)
 	FindAll() ([]domain.Device, error)
-	Find(id uint64) (domain.Device, error)
+	Find(id uint64) (interface{}, error)
 	Update(d domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
 	UninstallDevice(deviceId uint64) error
@@ -28,6 +29,7 @@ func NewDeviceService(dr database.DeviceRepository) DeviceService {
 }
 
 func (s *deviceService) Save(d domain.Device) (domain.Device, error) {
+	d.GUID = uuid.New().String()
 	device, err := s.deviceRepo.Save(d)
 	if err != nil {
 		log.Printf("DeviceService: %s", err)
@@ -47,7 +49,7 @@ func (s *deviceService) FindAll() ([]domain.Device, error) {
 	return devices, nil
 }
 
-func (s *deviceService) Find(id uint64) (domain.Device, error) {
+func (s *deviceService) Find(id uint64) (interface{}, error) {
 	device, err := s.deviceRepo.Find(id)
 	if err != nil {
 		log.Printf("DeviceService: %s", err)
@@ -78,7 +80,7 @@ func (s *deviceService) InstallDevice(deviceId uint64, roomId uint64) error {
 }
 
 func (s *deviceService) UninstallDevice(deviceId uint64) error {
-	err := s.deviceRepo.Delete(deviceId)
+	err := s.deviceRepo.UninstallDevice(deviceId)
 	if err != nil {
 		log.Printf("DeviceService: %s", err)
 		return err

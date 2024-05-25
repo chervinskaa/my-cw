@@ -7,7 +7,7 @@ import (
 	"github.com/upper/db/v4"
 )
 
-const MeasurementTableName = "measurements"
+const MeasurementsTableName = "measurements"
 
 type measurement struct {
 	Id          uint64     `db:"id,omitempty"`
@@ -34,7 +34,7 @@ type measurementRepository struct {
 
 func NewMeasurementRepository(dbSession db.Session) MeasurementRepository {
 	return &measurementRepository{
-		coll: dbSession.Collection(MeasurementTableName),
+		coll: dbSession.Collection(MeasurementsTableName),
 		sess: dbSession,
 	}
 }

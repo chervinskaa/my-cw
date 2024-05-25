@@ -2,8 +2,8 @@ CREATE TABLE IF NOT EXISTS public.devices
 (
     id              serial PRIMARY KEY,
     organization_id         integer NOT NULL references public.organizations(id),
-    room_id  integer NOT NULL references public.room(id),
-    "guid"         UUID DEFAULT uuid_generate_v4(),
+    room_id  integer NOT NULL references public.rooms(id),
+    "guid"         UUID,
     inventory_number VARCHAR(255),
     serial_number   VARCHAR(255),
     characteristics TEXT,

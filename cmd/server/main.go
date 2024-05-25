@@ -46,7 +46,10 @@ func main() {
 		log.Fatalf("Unable to apply migrations: %q\n", err)
 	}
 
-	cont := container.New(conf)
+	cont, err := container.New(conf)
+	if err != nil {
+		log.Fatalf("Unable to create container: %q\n", err)
+	}
 
 	// HTTP Server
 	err = http.Server(
@@ -58,5 +61,4 @@ func main() {
 		exitCode = 2
 		return
 	}
-
 }

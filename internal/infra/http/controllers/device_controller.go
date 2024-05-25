@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/requests"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/resources"
+	"github.com/go-chi/chi/v5"
 )
 
 type DeviceController struct {
@@ -88,7 +90,15 @@ func (c DeviceController) Find() http.HandlerFunc {
 			return
 		}
 
-		deviceDto := resources.DeviceDto{}.DomainToDto(device)
+		domainDevice, ok := device.(domain.Device)
+		if !ok {
+			err := fmt.Errorf("unable to assert device as domain.Device")
+			log.Printf("DeviceController: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		deviceDto := resources.DeviceDto{}.DomainToDto(domainDevice)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(deviceDto)
@@ -153,13 +163,14 @@ func (c DeviceController) InstallDevice() http.HandlerFunc {
 
 func (c DeviceController) UninstallDevice() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		deviceId, err := strconv.ParseUint(r.URL.Query().Get("deviceId"), 10, 64)
+		deviceId := chi.URLParam(r, "deviceId")
+		id, err := strconv.ParseUint(deviceId, 10, 64)
 		if err != nil {
 			http.Error(w, "Invalid device ID", http.StatusBadRequest)
 			return
 		}
 
-		err = c.DeviceService.UninstallDevice(deviceId)
+		err = c.DeviceService.UninstallDevice(id)
 		if err != nil {
 			log.Printf("DeviceController: %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

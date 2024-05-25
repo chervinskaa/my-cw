@@ -7,7 +7,7 @@ import (
 	"github.com/upper/db/v4"
 )
 
-const DeviceTableName = "devices"
+const DevicesTableName = "devices"
 
 type device struct {
 	Id               uint64                `db:"id,omitempty"`
@@ -42,7 +42,7 @@ type deviceRepository struct {
 
 func NewDeviceRepository(dbSession db.Session) DeviceRepository {
 	return &deviceRepository{
-		coll: dbSession.Collection(DeviceTableName),
+		coll: dbSession.Collection(DevicesTableName),
 		sess: dbSession,
 	}
 }
@@ -97,9 +97,8 @@ func (r *deviceRepository) InstallDevice(deviceId uint64, roomId uint64) error {
 }
 
 func (r *deviceRepository) UninstallDevice(deviceId uint64) error {
-	err := r.coll.Find(db.Cond{"id": deviceId, "deleted_date": nil}).Update(map[string]interface{}{
-		"room_id": nil,
-	})
+	query := `UPDATE devices SET room_id = NULL, updated_date = ? WHERE id = ?`
+	_, err := r.sess.SQL().Exec(query, time.Now(), deviceId)
 	return err
 }
 
