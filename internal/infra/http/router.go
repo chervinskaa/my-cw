@@ -14,9 +14,8 @@ import (
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/controllers"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/middlewares"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
-
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 func Router(cont container.Container) http.Handler {
@@ -138,9 +137,9 @@ func RoomRouter(r chi.Router, rc controllers.RoomController, rs app.RoomService)
 			"/",
 			rc.Save(),
 		)
-		apiRouter.Get(
-			"/",
-			rc.FindForOrganization(),
+		apiRouter.With(rOpom).Get(
+			"/{orgId}",
+			rc.FindByOrgId(),
 		)
 		apiRouter.With(rOpom).Get(
 			"/{roomId}",
@@ -157,40 +156,7 @@ func RoomRouter(r chi.Router, rc controllers.RoomController, rs app.RoomService)
 	})
 }
 
-func DeviceRouter(r chi.Router, dc controllers.DeviceController, ds app.DeviceService) {
-	dOpom := middlewares.PathObject("deviceId", controllers.DevKey, ds)
-	r.Route("/devices", func(apiRouter chi.Router) {
-		apiRouter.Post(
-			"/",
-			dc.Save(),
-		)
-		apiRouter.Get(
-			"/",
-			dc.FindAll(),
-		)
-		apiRouter.With(dOpom).Get(
-			"/{deviceId}",
-			dc.Find(),
-		)
-		apiRouter.With(dOpom).Put(
-			"/{deviceId}",
-			dc.Update(),
-		)
-		apiRouter.With(dOpom).Delete(
-			"/{deviceId}",
-			dc.Delete(),
-		)
-		apiRouter.With(dOpom).Post(
-			"/{deviceId}/install",
-			dc.InstallDevice(),
-		)
-		apiRouter.With(dOpom).Post(
-			"/{deviceId}/uninstall",
-			dc.UninstallDevice(),
-		)
-	})
-}
-
+// Ця функція не змінилася
 func NotFoundJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -202,6 +168,7 @@ func NotFoundJSON() http.HandlerFunc {
 	}
 }
 
+// Ця функція не змінилася
 func PingHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

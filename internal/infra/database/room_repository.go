@@ -22,7 +22,7 @@ type room struct {
 
 type RoomRepository interface {
 	Save(r domain.Room) (domain.Room, error)
-	FindForOrganization(oId uint64) ([]domain.Room, error)
+	FindByOrgId(oId uint64) ([]domain.Room, error)
 	Find(id uint64) (domain.Room, error)
 	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
@@ -30,19 +30,11 @@ type RoomRepository interface {
 
 type roomRepository struct {
 	coll db.Collection
-	sess db.Session
 }
 
-func NewRoomRepository(dbSession db.Session) RoomRepository {
-	if dbSession == nil {
-		log.Fatal("NewRoomRepository: dbSession is nil")
-	}
-
-	log.Printf("NewRoomRepository: dbSession is initialized")
-
+func NewRoomRepository(sess db.Session) RoomRepository {
 	return &roomRepository{
-		coll: dbSession.Collection(RoomsTableName),
-		sess: dbSession,
+		coll: sess.Collection("rooms"),
 	}
 }
 
@@ -60,17 +52,17 @@ func (r *roomRepository) Save(o domain.Room) (domain.Room, error) {
 	return o, nil
 }
 
-func (r *roomRepository) FindForOrganization(oId uint64) ([]domain.Room, error) {
-	log.Printf("RoomRepository: Finding rooms for organization %d", oId)
-	var rooms []room
-	err := r.coll.Find(db.Cond{"organization_id": oId, "deleted_date": nil}).All(&rooms)
+func (r *roomRepository) FindByOrgId(orgId uint64) ([]domain.Room, error) {
+	var rooms []domain.Room
+	err := r.coll.Find("organization_id", orgId).All(&rooms)
 	if err != nil {
-		log.Printf("RoomRepository: Error finding rooms for organization %d: %s", oId, err)
+		if err == db.ErrNoMoreRows {
+			return nil, nil // Return an empty slice if no rooms found
+		}
+		log.Printf("RoomRepository: Error finding rooms for organization ID %d: %s", orgId, err)
 		return nil, err
 	}
-	res := r.mapModelToDomainCollection(rooms)
-	log.Printf("RoomRepository: Found rooms for organization %d: %+v", oId, res)
-	return res, nil
+	return rooms, nil
 }
 
 func (r *roomRepository) Find(id uint64) (domain.Room, error) {

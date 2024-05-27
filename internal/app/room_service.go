@@ -9,8 +9,8 @@ import (
 )
 
 type RoomService interface {
-	Save(r domain.Room, uId uint64) (domain.Room, error)
-	FindForOrganization(oId uint64) ([]domain.Room, error)
+	Save(r domain.Room) (domain.Room, error)
+	FindByOrgId(orgId uint64) ([]domain.Room, error)
 	Find(id uint64) (interface{}, error)
 	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
@@ -37,41 +37,23 @@ func NewRoomService(rr database.RoomRepository, or database.OrganizationReposito
 	}, nil
 }
 
-func (s *roomService) Save(r domain.Room, uId uint64) (domain.Room, error) {
-	log.Printf("RoomService: Saving room %+v for user with ID %d", r, uId)
-
-	org, err := s.orgRepo.FindById(r.OrganizationId)
-	if err != nil {
-		log.Printf("RoomService: Error finding organization: %s", err)
-		return domain.Room{}, err
-	}
-
-	if org.UserId != uId {
-		err = errors.New("access denied")
-		log.Printf("RoomService: %s", err)
-		return domain.Room{}, err
-	}
-
-	room, err := s.roomRepo.Save(r)
+func (s *roomService) Save(r domain.Room) (domain.Room, error) {
+	createdRoom, err := s.roomRepo.Save(r)
 	if err != nil {
 		log.Printf("RoomService: Error saving room: %s", err)
 		return domain.Room{}, err
 	}
 
-	log.Printf("RoomService: Room saved successfully: %+v", room)
-	return room, nil
+	log.Printf("RoomService: Room saved successfully: %+v", createdRoom)
+	return createdRoom, nil
 }
 
-func (s *roomService) FindForOrganization(oId uint64) ([]domain.Room, error) {
-	log.Printf("RoomService: Finding rooms for organization with ID %d", oId)
-
-	rooms, err := s.roomRepo.FindForOrganization(oId)
+func (s *roomService) FindByOrgId(orgId uint64) ([]domain.Room, error) {
+	rooms, err := s.roomRepo.FindByOrgId(orgId)
 	if err != nil {
-		log.Printf("RoomService: Error finding rooms: %s", err)
+		log.Printf("RoomService: Error finding rooms for organization ID %d: %s", orgId, err)
 		return nil, err
 	}
-
-	log.Printf("RoomService: Found rooms successfully: %+v", rooms)
 	return rooms, nil
 }
 
@@ -81,7 +63,7 @@ func (s *roomService) Find(id uint64) (interface{}, error) {
 	room, err := s.roomRepo.Find(id)
 	if err != nil {
 		log.Printf("RoomService: Error finding room: %s", err)
-		return nil, err
+		return domain.Room{}, err
 	}
 
 	log.Printf("RoomService: Found room successfully: %+v", room)
