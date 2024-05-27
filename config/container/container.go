@@ -53,7 +53,7 @@ func New(conf config.Configuration) (Container, error) {
 	userService := app.NewUserService(userRepository)
 	authService := app.NewAuthService(sessionRepository, userRepository, tknAuth, conf.JwtTTL)
 	organizationService := app.NewOrganizationService(organizationRepository, roomRepository)
-	roomService, err := app.NewRoomService(roomRepository, organizationRepository)
+	roomService, err := app.NewRoomService(roomRepository, organizationRepository, deviceRepository)
 	if err != nil {
 		return Container{}, err
 	}
@@ -63,7 +63,7 @@ func New(conf config.Configuration) (Container, error) {
 	userController := controllers.NewUserController(userService, authService)
 	organizationController := controllers.NewOrganizationController(organizationService)
 	roomController := controllers.NewRoomController(roomService, organizationService)
-	deviceController := controllers.NewDeviceController(deviceService)
+	deviceController := controllers.NewDeviceController(deviceService, roomService)
 
 	authMiddleware := middlewares.AuthMiddleware(tknAuth, authService, userService)
 

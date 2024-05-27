@@ -148,27 +148,16 @@ func (c *RoomController) Update() http.HandlerFunc {
 
 func (c *RoomController) Delete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		org, ok := r.Context().Value(OrgKey).(domain.Organization)
-		if !ok {
-			log.Printf("RoomController: failed to retrieve organization from context")
-			InternalServerError(w, errors.New("failed to retrieve organization from context"))
-			return
-		}
+		org := r.Context().Value(OrgKey).(domain.Organization)
+		ro := r.Context().Value(RoKey).(domain.Room)
 
-		room, ok := r.Context().Value(RoKey).(domain.Room)
-		if !ok {
-			log.Printf("RoomController: failed to retrieve room from context")
-			InternalServerError(w, errors.New("failed to retrieve room from context"))
-			return
-		}
-
-		if room.OrganizationId != org.Id {
+		if ro.OrganizationId != org.Id {
 			err := fmt.Errorf("access denied")
 			Forbidden(w, err)
 			return
 		}
 
-		err := c.roomService.Delete(room.Id)
+		err := c.roomService.Delete(ro.Id)
 		if err != nil {
 			log.Printf("RoomController: %s", err)
 			InternalServerError(w, err)

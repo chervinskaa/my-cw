@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -16,116 +16,121 @@ import (
 
 type DeviceController struct {
 	DeviceService app.DeviceService
+	RoomService   app.RoomService
 }
 
-func NewDeviceController(ds app.DeviceService) DeviceController {
+func NewDeviceController(ds app.DeviceService, rs app.RoomService) DeviceController {
 	return DeviceController{
 		DeviceService: ds,
+		RoomService:   rs,
 	}
 }
 
-func (c DeviceController) Save() http.HandlerFunc {
+func (c *DeviceController) Save() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req requests.DeviceRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
+		var deviceRequest requests.DeviceRequest
+		err := json.NewDecoder(r.Body).Decode(&deviceRequest)
 		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			log.Printf("DeviceController: Error decoding request body: %s", err)
+			BadRequest(w, errors.New("invalid request payload"))
 			return
 		}
 
-		dev, err := req.ToDomainModel()
-		if err != nil {
+		if deviceRequest.RoomId == nil {
+			err := errors.New("roomId is required")
 			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			BadRequest(w, err)
 			return
 		}
 
-		savedDevice, err := c.DeviceService.Save(dev)
+		_, err = c.RoomService.Find(*deviceRequest.RoomId)
 		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("DeviceController: Error finding room: %s", err)
+			BadRequest(w, errors.New("room not found"))
 			return
 		}
 
-		deviceDto := resources.DeviceDto{}.DomainToDto(savedDevice)
+		device, err := deviceRequest.ToDomainModel()
+		if err != nil {
+			log.Printf("DeviceController: Error converting to domain model: %s", err)
+			BadRequest(w, err)
+			return
+		}
+
+		createdDevice, err := c.DeviceService.Save(device)
+		if err != nil {
+			log.Printf("DeviceController: %s", err)
+			InternalServerError(w, errors.New("failed to save device"))
+			return
+		}
+
+		deviceDto := resources.DeviceDto{}.DomainToDto(createdDevice)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(deviceDto)
 	}
 }
 
-func (c DeviceController) FindAll() http.HandlerFunc {
+func (c *DeviceController) FindByRoomId() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		devices, err := c.DeviceService.FindAll()
+		roomIdParam := chi.URLParam(r, "roomId")
+		roomId, err := strconv.ParseUint(roomIdParam, 10, 64)
 		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("DeviceController: Invalid room ID: %s", err)
+			BadRequest(w, errors.New("invalid room ID"))
 			return
 		}
 
-		deviceDtos := make([]resources.DeviceDto, len(devices))
-		for i, device := range devices {
-			deviceDtos[i] = resources.DeviceDto{}.DomainToDto(device)
+		log.Printf("DeviceController: Looking for devices with room ID: %d", roomId)
+
+		devices, err := c.DeviceService.FindByRoomId(roomId)
+		if err != nil {
+			log.Printf("DeviceController: Error finding devices: %s", err)
+			InternalServerError(w, errors.New("failed to retrieve devices"))
+			return
 		}
 
+		if len(devices) == 0 {
+			log.Printf("DeviceController: No devices found for room ID: %d", roomId)
+		}
+
+		devicesDto := resources.DevicesDto{}.DomainToDto(devices)
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(deviceDtos)
+		json.NewEncoder(w).Encode(devicesDto)
 	}
 }
 
-func (c DeviceController) Find() http.HandlerFunc {
+func (c *DeviceController) Find() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid ID", http.StatusBadRequest)
-			return
-		}
+		device := r.Context().Value(DevKey).(domain.Device)
 
-		device, err := c.DeviceService.Find(id)
-		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		domainDevice, ok := device.(domain.Device)
-		if !ok {
-			err := fmt.Errorf("unable to assert device as domain.Device")
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		deviceDto := resources.DeviceDto{}.DomainToDto(domainDevice)
+		deviceDto := resources.DeviceDto{}.DomainToDto(device)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(deviceDto)
 	}
 }
 
-func (c DeviceController) Update() http.HandlerFunc {
+func (c *DeviceController) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req requests.DeviceRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
+		device := r.Context().Value(DevKey).(domain.Device)
+
+		var deviceRequest requests.DeviceRequest
+		err := json.NewDecoder(r.Body).Decode(&deviceRequest)
 		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			log.Printf("DeviceController: Error decoding request body: %s", err)
+			BadRequest(w, errors.New("invalid request payload"))
 			return
 		}
 
-		device, err := req.ToDomainModel()
-		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		device.Characteristics = deviceRequest.Characteristics
+		device.PowerConsumption = deviceRequest.PowerConsumption
+		device.Units = deviceRequest.Units
 
 		updatedDevice, err := c.DeviceService.Update(device)
 		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("DeviceController: Error updating device: %s", err)
+			InternalServerError(w, errors.New("failed to update device"))
 			return
 		}
 
@@ -136,56 +141,11 @@ func (c DeviceController) Update() http.HandlerFunc {
 	}
 }
 
-func (c DeviceController) InstallDevice() http.HandlerFunc {
+func (c *DeviceController) Delete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		deviceId, err := strconv.ParseUint(r.URL.Query().Get("deviceId"), 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid device ID", http.StatusBadRequest)
-			return
-		}
+		device := r.Context().Value(DevKey).(domain.Device)
 
-		roomId, err := strconv.ParseUint(r.URL.Query().Get("roomId"), 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid room ID", http.StatusBadRequest)
-			return
-		}
-
-		err = c.DeviceService.InstallDevice(deviceId, roomId)
-		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func (c DeviceController) UninstallDevice() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		deviceId := chi.URLParam(r, "deviceId")
-		id, err := strconv.ParseUint(deviceId, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid device ID", http.StatusBadRequest)
-			return
-		}
-
-		err = c.DeviceService.UninstallDevice(id)
-		if err != nil {
-			log.Printf("DeviceController: %s", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func (c DeviceController) Delete() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		d := r.Context().Value(DevKey).(domain.Device)
-
-		err := c.DeviceService.Delete(d.Id)
+		err := c.DeviceService.Delete(device.Id)
 		if err != nil {
 			log.Printf("DeviceController: %s", err)
 			InternalServerError(w, err)
@@ -193,5 +153,63 @@ func (c DeviceController) Delete() http.HandlerFunc {
 		}
 
 		Ok(w)
+	}
+}
+
+func (c *DeviceController) Install() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		device := r.Context().Value(DevKey).(domain.Device)
+
+		var req requests.DeviceRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			log.Printf("DeviceController: Error decoding request body: %s", err)
+			BadRequest(w, errors.New("invalid request payload"))
+			return
+		}
+
+		if req.RoomId == nil {
+			BadRequest(w, errors.New("roomId is required"))
+			return
+		}
+
+		_, err = c.RoomService.Find(*req.RoomId)
+		if err != nil {
+			log.Printf("DeviceController: Room not found: %s", err)
+			BadRequest(w, errors.New("room not found"))
+			return
+		}
+
+		device.RoomId = req.RoomId
+		updatedDevice, err := c.DeviceService.Update(device)
+		if err != nil {
+			log.Printf("DeviceController: Error installing device: %s", err)
+			InternalServerError(w, errors.New("failed to install device"))
+			return
+		}
+
+		deviceDto := resources.DeviceDto{}.DomainToDto(updatedDevice)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(deviceDto)
+	}
+}
+
+func (c *DeviceController) Uninstall() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		device := r.Context().Value(DevKey).(domain.Device)
+
+		device.RoomId = nil
+		updatedDevice, err := c.DeviceService.Update(device)
+		if err != nil {
+			log.Printf("DeviceController: Error uninstalling device: %s", err)
+			InternalServerError(w, errors.New("failed to uninstall device"))
+			return
+		}
+
+		deviceDto := resources.DeviceDto{}.DomainToDto(updatedDevice)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(deviceDto)
 	}
 }

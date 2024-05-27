@@ -18,11 +18,12 @@ type RoomService interface {
 }
 
 type roomService struct {
-	roomRepo database.RoomRepository
-	orgRepo  database.OrganizationRepository
+	roomRepo   database.RoomRepository
+	orgRepo    database.OrganizationRepository
+	deviceRepo database.DeviceRepository
 }
 
-func NewRoomService(rr database.RoomRepository, or database.OrganizationRepository) (RoomService, error) {
+func NewRoomService(rr database.RoomRepository, or database.OrganizationRepository, dr database.DeviceRepository) (RoomService, error) {
 	if rr == nil {
 		return nil, errors.New("room repository is nil")
 	}
@@ -33,8 +34,9 @@ func NewRoomService(rr database.RoomRepository, or database.OrganizationReposito
 	log.Printf("NewRoomService: room repository and organization repository are initialized")
 
 	return &roomService{
-		roomRepo: rr,
-		orgRepo:  or,
+		roomRepo:   rr,
+		orgRepo:    or,
+		deviceRepo: dr,
 	}, nil
 }
 

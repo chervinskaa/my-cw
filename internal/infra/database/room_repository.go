@@ -54,7 +54,7 @@ func (r *roomRepository) Save(dr domain.Room) (domain.Room, error) {
 }
 
 func (r *roomRepository) FindByOrgId(orgId uint64) ([]domain.Room, error) {
-	var rooms []room // Use the correct model type for the database query
+	var rooms []room
 	err := r.coll.Find(db.Cond{"organization_id": orgId}).All(&rooms)
 	if err != nil {
 		if err == db.ErrNoMoreRows {

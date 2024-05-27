@@ -1,13 +1,28 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"strings"
+	"time"
+)
 
 type DeviceCategory string
 
 const (
-	SENSOR   DeviceCategory = "SENSOR"
-	ACTUATOR DeviceCategory = "ACTUATOR"
+	Sensor   DeviceCategory = "SENSOR"
+	Actuator DeviceCategory = "ACTUATOR"
 )
+
+func ParseDeviceCategory(category string) (DeviceCategory, error) {
+	switch strings.ToUpper(category) {
+	case "SENSOR":
+		return Sensor, nil
+	case "ACTUATOR":
+		return Actuator, nil
+	default:
+		return "", errors.New("invalid device category")
+	}
+}
 
 type Device struct {
 	Id               uint64

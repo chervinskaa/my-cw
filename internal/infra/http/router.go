@@ -139,7 +139,7 @@ func RoomRouter(r chi.Router, rc controllers.RoomController, rs app.RoomService)
 			rc.Save(),
 		)
 		apiRouter.Get(
-			"/organization/{orgId}",
+			"/organizations/{orgId}",
 			rc.FindByOrgId(),
 		)
 		apiRouter.With(rOpom).Get(
@@ -153,6 +153,41 @@ func RoomRouter(r chi.Router, rc controllers.RoomController, rs app.RoomService)
 		apiRouter.With(rOpom).Delete(
 			"/{roomId}",
 			rc.Delete(),
+		)
+	})
+}
+
+func DeviceRouter(r chi.Router, dc controllers.DeviceController, ds app.DeviceService) {
+	dOpom := middlewares.PathObject("deviceId", controllers.DevKey, ds)
+
+	r.Route("/devices", func(apiRouter chi.Router) {
+		apiRouter.Post(
+			"/",
+			dc.Save(),
+		)
+		apiRouter.Get(
+			"/rooms/{roomId}",
+			dc.FindByRoomId(),
+		)
+		apiRouter.With(dOpom).Get(
+			"/{deviceId}",
+			dc.Find(),
+		)
+		apiRouter.With(dOpom).Put(
+			"/{deviceId}",
+			dc.Update(),
+		)
+		apiRouter.With(dOpom).Put(
+			"/{deviceId}/install",
+			dc.Install(),
+		)
+		apiRouter.With(dOpom).Put(
+			"/{deviceId}/uninstall",
+			dc.Uninstall(),
+		)
+		apiRouter.With(dOpom).Delete(
+			"/{deviceId}",
+			dc.Delete(),
 		)
 	})
 }
