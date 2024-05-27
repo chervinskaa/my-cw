@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
@@ -54,6 +55,12 @@ func (s *roomService) FindByOrgId(orgId uint64) ([]domain.Room, error) {
 		log.Printf("RoomService: Error finding rooms for organization ID %d: %s", orgId, err)
 		return nil, err
 	}
+
+	if len(rooms) == 0 {
+		log.Printf("RoomService: No rooms found for organization ID %d", orgId)
+	}
+
+	log.Printf("RoomService: Found %d rooms for organization ID %d", len(rooms), orgId)
 	return rooms, nil
 }
 
@@ -64,6 +71,11 @@ func (s *roomService) Find(id uint64) (interface{}, error) {
 	if err != nil {
 		log.Printf("RoomService: Error finding room: %s", err)
 		return domain.Room{}, err
+	}
+
+	if room.Id == 0 {
+		log.Printf("RoomService: No room found with ID %d", id)
+		return domain.Room{}, fmt.Errorf("room not found")
 	}
 
 	log.Printf("RoomService: Found room successfully: %+v", room)

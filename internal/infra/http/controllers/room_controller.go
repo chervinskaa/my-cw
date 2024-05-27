@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -32,21 +33,21 @@ func (c *RoomController) Save() http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&roomRequest)
 		if err != nil {
 			log.Printf("RoomController: Error decoding request body: %s", err)
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			BadRequest(w, errors.New("invalid request payload"))
 			return
 		}
 
 		if roomRequest.OrganizationId == 0 {
 			err := errors.New("organizationId is required")
 			log.Printf("RoomController: %s", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			BadRequest(w, err)
 			return
 		}
 
 		_, err = c.organizationService.Find(roomRequest.OrganizationId)
 		if err != nil {
 			log.Printf("RoomController: Error finding organization: %s", err)
-			http.Error(w, "Organization not found", http.StatusBadRequest)
+			BadRequest(w, errors.New("organization not found"))
 			return
 		}
 
@@ -59,7 +60,7 @@ func (c *RoomController) Save() http.HandlerFunc {
 		createdRoom, err := c.roomService.Save(room)
 		if err != nil {
 			log.Printf("RoomController: %s", err)
-			http.Error(w, "Failed to save room", http.StatusInternalServerError)
+			InternalServerError(w, errors.New("failed to save room"))
 			return
 		}
 
@@ -69,97 +70,111 @@ func (c *RoomController) Save() http.HandlerFunc {
 	}
 }
 
-func (c RoomController) FindByOrgId() http.HandlerFunc {
+func (c *RoomController) FindByOrgId() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		orgIdParam := chi.URLParam(r, "orgId")
 		orgId, err := strconv.ParseUint(orgIdParam, 10, 64)
 		if err != nil {
 			log.Printf("RoomController: Invalid organization ID: %s", err)
-			http.Error(w, "Invalid organization ID", http.StatusBadRequest)
+			BadRequest(w, errors.New("invalid organization ID"))
 			return
 		}
+
+		log.Printf("RoomController: Looking for rooms with organization ID: %d", orgId)
 
 		rooms, err := c.roomService.FindByOrgId(orgId)
 		if err != nil {
 			log.Printf("RoomController: Error finding rooms: %s", err)
-			http.Error(w, "Failed to retrieve rooms", http.StatusInternalServerError)
+			InternalServerError(w, errors.New("failed to retrieve rooms"))
 			return
 		}
 
+		if len(rooms) == 0 {
+			log.Printf("RoomController: No rooms found for organization ID: %d", orgId)
+		}
+
+		var roomsDto []resources.RoomDto
+		for _, room := range rooms {
+			roomDto := resources.RoomDto{}.DomainToDto(room)
+			roomsDto = append(roomsDto, roomDto)
+		}
+
+		log.Printf("RoomController: Found %d rooms for organization ID: %d", len(roomsDto), orgId)
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(rooms)
+		json.NewEncoder(w).Encode(roomsDto)
 	}
 }
 
-func (c RoomController) Find() http.HandlerFunc {
+func (c *RoomController) Find() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		organization := r.Context().Value(OrgKey).(domain.Organization)
-		ro := r.Context().Value(RoKey).(domain.Room)
+		room := r.Context().Value(RoKey).(domain.Room)
 
-		if ro.OrganizationId != organization.Id {
-			err := errors.New("access denied")
-			http.Error(w, err.Error(), http.StatusForbidden)
-			return
-		}
-
-		var roomDto resources.RoomDto
+		roomDto := resources.RoomDto{}.DomainToDto(room)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(roomDto.DomainToDto(ro))
+		json.NewEncoder(w).Encode(roomDto)
 	}
 }
 
-func (c RoomController) Update() http.HandlerFunc {
+func (c *RoomController) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		organization := r.Context().Value(OrgKey).(domain.Organization)
-		ro, err := requests.Bind(r, requests.RoomRequest{}, domain.Room{})
-		if err != nil {
-			log.Printf("RoomController: %s", err)
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
-			return
-		}
-
 		room := r.Context().Value(RoKey).(domain.Room)
-		if room.OrganizationId != organization.Id {
-			err := errors.New("access denied")
-			http.Error(w, err.Error(), http.StatusForbidden)
+
+		var roomRequest requests.RoomRequest
+		err := json.NewDecoder(r.Body).Decode(&roomRequest)
+		if err != nil {
+			log.Printf("RoomController: Error decoding request body: %s", err)
+			BadRequest(w, errors.New("invalid request payload"))
 			return
 		}
 
-		room.Name = ro.Name
-		room.Description = ro.Description
+		room.Name = roomRequest.Name
+		room.Description = roomRequest.Description
+
 		updatedRoom, err := c.roomService.Update(room)
 		if err != nil {
-			log.Printf("RoomController: %s", err)
-			http.Error(w, "Failed to update room", http.StatusInternalServerError)
+			log.Printf("RoomController: Error updating room: %s", err)
+			InternalServerError(w, errors.New("failed to update room"))
 			return
 		}
 
-		var roomDto resources.RoomDto
+		roomDto := resources.RoomDto{}.DomainToDto(updatedRoom)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(roomDto.DomainToDto(updatedRoom))
+		json.NewEncoder(w).Encode(roomDto)
 	}
 }
 
-func (c RoomController) Delete() http.HandlerFunc {
+func (c *RoomController) Delete() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		organization := r.Context().Value(OrgKey).(domain.Organization)
-		ro := r.Context().Value(RoKey).(domain.Room)
-
-		if ro.OrganizationId != organization.Id {
-			err := errors.New("access denied")
-			http.Error(w, err.Error(), http.StatusForbidden)
+		org, ok := r.Context().Value(OrgKey).(domain.Organization)
+		if !ok {
+			log.Printf("RoomController: failed to retrieve organization from context")
+			InternalServerError(w, errors.New("failed to retrieve organization from context"))
 			return
 		}
 
-		err := c.roomService.Delete(ro.Id)
+		room, ok := r.Context().Value(RoKey).(domain.Room)
+		if !ok {
+			log.Printf("RoomController: failed to retrieve room from context")
+			InternalServerError(w, errors.New("failed to retrieve room from context"))
+			return
+		}
+
+		if room.OrganizationId != org.Id {
+			err := fmt.Errorf("access denied")
+			Forbidden(w, err)
+			return
+		}
+
+		err := c.roomService.Delete(room.Id)
 		if err != nil {
 			log.Printf("RoomController: %s", err)
-			http.Error(w, "Failed to delete room", http.StatusInternalServerError)
+			InternalServerError(w, err)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		Ok(w)
 	}
 }

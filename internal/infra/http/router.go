@@ -132,13 +132,14 @@ func OrganizationRouter(r chi.Router, oc controllers.OrganizationController, os 
 
 func RoomRouter(r chi.Router, rc controllers.RoomController, rs app.RoomService) {
 	rOpom := middlewares.PathObject("roomId", controllers.RoKey, rs)
+
 	r.Route("/rooms", func(apiRouter chi.Router) {
 		apiRouter.Post(
 			"/",
 			rc.Save(),
 		)
-		apiRouter.With(rOpom).Get(
-			"/{orgId}",
+		apiRouter.Get(
+			"/organization/{orgId}",
 			rc.FindByOrgId(),
 		)
 		apiRouter.With(rOpom).Get(
