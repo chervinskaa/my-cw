@@ -15,7 +15,7 @@ type device struct {
 	Id               uint64                `db:"id,omitempty"`
 	OrganizationId   uint64                `db:"organization_id"`
 	RoomId           *uint64               `db:"room_id"`
-	GUID             string                `db:"guid_id"`
+	GUID             string                `db:"guid"`
 	InventoryNumber  string                `db:"inventory_number"`
 	SerialNumber     string                `db:"serial_number"`
 	Characteristics  string                `db:"characteristics"`
@@ -29,7 +29,7 @@ type device struct {
 
 type DeviceRepository interface {
 	Save(d domain.Device) (domain.Device, error)
-	FindByRoomId(roomId uint64) ([]domain.Device, error)
+	FindAll() ([]domain.Device, error)
 	Find(id uint64) (domain.Device, error)
 	Update(d domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
@@ -70,21 +70,14 @@ func (r *deviceRepository) Save(dd domain.Device) (domain.Device, error) {
 	return dd, nil
 }
 
-func (r *deviceRepository) FindByRoomId(roomId uint64) ([]domain.Device, error) {
-	var devices []device
-	err := r.coll.Find(db.Cond{"room_id": roomId}).All(&devices)
+func (r *deviceRepository) FindAll() ([]domain.Device, error) {
+	var devs []device
+	err := r.coll.Find(db.Cond{"deleted_date": nil}).All(&devs)
 	if err != nil {
-		if err == db.ErrNoMoreRows {
-			log.Printf("DeviceRepository: No devices found for room ID %d", roomId)
-			return []domain.Device{}, nil
-		}
-		log.Printf("DeviceRepository: Error finding devices for room ID %d: %s", roomId, err)
 		return nil, err
 	}
-
-	log.Printf("DeviceRepository: Found %d devices for room ID %d", len(devices), roomId)
-
-	return r.mapModelToDomainCollection(devices), nil
+	res := r.mapModelToDomainCollection(devs)
+	return res, nil
 }
 
 func (r *deviceRepository) Find(id uint64) (domain.Device, error) {

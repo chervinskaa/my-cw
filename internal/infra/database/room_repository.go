@@ -22,8 +22,9 @@ type room struct {
 
 type RoomRepository interface {
 	Save(r domain.Room) (domain.Room, error)
-	FindByOrgId(oId uint64) ([]domain.Room, error)
+	FindByOrgId(orgId uint64) ([]domain.Room, error)
 	Find(id uint64) (domain.Room, error)
+	FindAll() ([]domain.Room, error)
 	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
 }
@@ -55,7 +56,7 @@ func (r *roomRepository) Save(dr domain.Room) (domain.Room, error) {
 
 func (r *roomRepository) FindByOrgId(orgId uint64) ([]domain.Room, error) {
 	var rooms []room
-	err := r.coll.Find(db.Cond{"organization_id": orgId}).All(&rooms)
+	err := r.coll.Find(db.Cond{"organization_id": orgId, "deleted_date": nil}).All(&rooms)
 	if err != nil {
 		if err == db.ErrNoMoreRows {
 			log.Printf("RoomRepository: No rooms found for organization ID %d", orgId)
@@ -84,6 +85,17 @@ func (r *roomRepository) Find(id uint64) (domain.Room, error) {
 	domainRoom := r.mapModelToDomain(roomModel)
 	log.Printf("RoomRepository: Found room with ID %d: %+v", id, domainRoom)
 	return domainRoom, nil
+}
+
+func (r *roomRepository) FindAll() ([]domain.Room, error) {
+	var rooms []room
+	err := r.coll.Find(db.Cond{"deleted_date": nil}).All(&rooms)
+	if err != nil {
+		log.Printf("RoomRepository: Error finding all rooms: %s", err)
+		return nil, err
+	}
+	res := r.mapModelToDomainCollection(rooms)
+	return res, nil
 }
 
 func (r *roomRepository) Update(dr domain.Room) (domain.Room, error) {

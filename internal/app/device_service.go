@@ -11,8 +11,8 @@ import (
 
 type DeviceService interface {
 	Save(d domain.Device) (domain.Device, error)
-	FindByRoomId(roomId uint64) ([]domain.Device, error)
 	Find(id uint64) (interface{}, error)
+	FindAll() ([]domain.Device, error)
 	Update(d domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
 	UninstallDevice(deviceId uint64) error
@@ -41,18 +41,13 @@ func (s *deviceService) Save(r domain.Device) (domain.Device, error) {
 	return createdDevice, nil
 }
 
-func (s *deviceService) FindByRoomId(roomId uint64) ([]domain.Device, error) {
-	devices, err := s.deviceRepo.FindByRoomId(roomId)
+func (s *deviceService) FindAll() ([]domain.Device, error) {
+	devices, err := s.deviceRepo.FindAll()
 	if err != nil {
-		log.Printf("DeviceService: Error finding devices for organization ID %d: %s", roomId, err)
+		log.Printf("DeviceService: %s", err)
 		return nil, err
 	}
 
-	if len(devices) == 0 {
-		log.Printf("DeviceService: No devices found for organization ID %d", roomId)
-	}
-
-	log.Printf("DeviceService: Found %d devices for organization ID %d", len(devices), roomId)
 	return devices, nil
 }
 

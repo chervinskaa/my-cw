@@ -7,7 +7,10 @@ import (
 )
 
 type DeviceRequest struct {
+	OrganizationId   uint64   `json:"organizationId"`
 	RoomId           *uint64  `json:"room_id"`
+	InventoryNumber  string   `json:"inventoryNumber"`
+	SerialNumber     string   `json:"serialNumber"`
 	Characteristics  string   `json:"characteristics" validate:"required"`
 	PowerConsumption *float64 `json:"power_consumption" validate:"omitempty"`
 	Units            *string  `json:"units" validate:"omitempty"`
@@ -28,7 +31,10 @@ func (r DeviceRequest) ToDomainModel() (domain.Device, error) {
 	}
 
 	return domain.Device{
+		OrganizationId:   r.OrganizationId,
 		RoomId:           r.RoomId,
+		InventoryNumber:  r.InventoryNumber,
+		SerialNumber:     r.SerialNumber,
 		Characteristics:  r.Characteristics,
 		PowerConsumption: r.PowerConsumption,
 		Units:            r.Units,

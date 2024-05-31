@@ -22,7 +22,6 @@ type measurement struct {
 type MeasurementRepository interface {
 	Save(m domain.Measurement) (domain.Measurement, error)
 	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) ([]domain.Measurement, error)
-	Find(id uint64) (domain.Measurement, error)
 	Update(m domain.Measurement) (domain.Measurement, error)
 	Delete(id uint64) error
 }
@@ -58,16 +57,6 @@ func (r *measurementRepository) FindByDeviceAndDate(deviceId uint64, startDate, 
 	}
 	res := r.mapModelToDomainCollection(measurements)
 	return res, nil
-}
-
-func (r *measurementRepository) Find(id uint64) (domain.Measurement, error) {
-	var measurement measurement
-	err := r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).One(&measurement)
-	if err != nil {
-		return domain.Measurement{}, err
-	}
-	m := r.mapModelToDomain(measurement)
-	return m, nil
 }
 
 func (r *measurementRepository) Update(m domain.Measurement) (domain.Measurement, error) {

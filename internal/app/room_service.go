@@ -11,8 +11,8 @@ import (
 
 type RoomService interface {
 	Save(r domain.Room) (domain.Room, error)
-	FindByOrgId(orgId uint64) ([]domain.Room, error)
 	Find(id uint64) (interface{}, error)
+	FindAll() ([]domain.Room, error)
 	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
 }
@@ -51,21 +51,6 @@ func (s *roomService) Save(r domain.Room) (domain.Room, error) {
 	return createdRoom, nil
 }
 
-func (s *roomService) FindByOrgId(orgId uint64) ([]domain.Room, error) {
-	rooms, err := s.roomRepo.FindByOrgId(orgId)
-	if err != nil {
-		log.Printf("RoomService: Error finding rooms for organization ID %d: %s", orgId, err)
-		return nil, err
-	}
-
-	if len(rooms) == 0 {
-		log.Printf("RoomService: No rooms found for organization ID %d", orgId)
-	}
-
-	log.Printf("RoomService: Found %d rooms for organization ID %d", len(rooms), orgId)
-	return rooms, nil
-}
-
 func (s *roomService) Find(id uint64) (interface{}, error) {
 	log.Printf("RoomService: Finding room with ID %d", id)
 
@@ -82,6 +67,16 @@ func (s *roomService) Find(id uint64) (interface{}, error) {
 
 	log.Printf("RoomService: Found room successfully: %+v", room)
 	return room, nil
+}
+
+func (s *roomService) FindAll() ([]domain.Room, error) {
+	rooms, err := s.roomRepo.FindAll()
+	if err != nil {
+		log.Printf("RoomService: Error finding all rooms: %s", err)
+		return nil, err
+	}
+	log.Printf("RoomService: Found %d rooms", len(rooms))
+	return rooms, nil
 }
 
 func (s *roomService) Update(r domain.Room) (domain.Room, error) {

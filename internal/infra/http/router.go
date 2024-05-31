@@ -53,6 +53,7 @@ func Router(cont container.Container) http.Handler {
 				UserRouter(apiRouter, cont.UserController)
 				OrganizationRouter(apiRouter, cont.OrganizationController, cont.OrganizationService)
 				RoomRouter(apiRouter, cont.RoomController, cont.RoomService)
+				DeviceRouter(apiRouter, cont.DeviceController, cont.DeviceService)
 				apiRouter.Handle("/*", NotFoundJSON())
 			})
 		})
@@ -138,13 +139,13 @@ func RoomRouter(r chi.Router, rc controllers.RoomController, rs app.RoomService)
 			"/",
 			rc.Save(),
 		)
-		apiRouter.Get(
-			"/organizations/{orgId}",
-			rc.FindByOrgId(),
-		)
 		apiRouter.With(rOpom).Get(
 			"/{roomId}",
 			rc.Find(),
+		)
+		apiRouter.Get(
+			"/",
+			rc.FindAll(),
 		)
 		apiRouter.With(rOpom).Put(
 			"/{roomId}",
@@ -166,8 +167,8 @@ func DeviceRouter(r chi.Router, dc controllers.DeviceController, ds app.DeviceSe
 			dc.Save(),
 		)
 		apiRouter.Get(
-			"/rooms/{roomId}",
-			dc.FindByRoomId(),
+			"/",
+			dc.FindAll(),
 		)
 		apiRouter.With(dOpom).Get(
 			"/{deviceId}",

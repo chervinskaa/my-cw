@@ -5,24 +5,24 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/app"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/requests"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/resources"
-	"github.com/go-chi/chi/v5"
 )
 
 type DeviceController struct {
-	DeviceService app.DeviceService
-	RoomService   app.RoomService
+	DeviceService       app.DeviceService
+	RoomService         app.RoomService
+	OrganizationService app.OrganizationService
 }
 
-func NewDeviceController(ds app.DeviceService, rs app.RoomService) DeviceController {
+func NewDeviceController(ds app.DeviceService, rs app.RoomService, os app.OrganizationService) DeviceController {
 	return DeviceController{
-		DeviceService: ds,
-		RoomService:   rs,
+		DeviceService:       ds,
+		RoomService:         rs,
+		OrganizationService: os,
 	}
 }
 
@@ -36,17 +36,17 @@ func (c *DeviceController) Save() http.HandlerFunc {
 			return
 		}
 
-		if deviceRequest.RoomId == nil {
-			err := errors.New("roomId is required")
+		if deviceRequest.OrganizationId == 0 {
+			err := errors.New("OrganizationId is required")
 			log.Printf("DeviceController: %s", err)
 			BadRequest(w, err)
 			return
 		}
 
-		_, err = c.RoomService.Find(*deviceRequest.RoomId)
+		_, err = c.OrganizationService.Find(deviceRequest.OrganizationId)
 		if err != nil {
-			log.Printf("DeviceController: Error finding room: %s", err)
-			BadRequest(w, errors.New("room not found"))
+			log.Printf("DeviceController: Error finding organization: %s", err)
+			BadRequest(w, errors.New("organization not found"))
 			return
 		}
 
@@ -71,32 +71,23 @@ func (c *DeviceController) Save() http.HandlerFunc {
 	}
 }
 
-func (c *DeviceController) FindByRoomId() http.HandlerFunc {
+func (c DeviceController) FindAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		roomIdParam := chi.URLParam(r, "roomId")
-		roomId, err := strconv.ParseUint(roomIdParam, 10, 64)
+		devices, err := c.DeviceService.FindAll()
 		if err != nil {
-			log.Printf("DeviceController: Invalid room ID: %s", err)
-			BadRequest(w, errors.New("invalid room ID"))
+			log.Printf("DeviceController: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		log.Printf("DeviceController: Looking for devices with room ID: %d", roomId)
-
-		devices, err := c.DeviceService.FindByRoomId(roomId)
-		if err != nil {
-			log.Printf("DeviceController: Error finding devices: %s", err)
-			InternalServerError(w, errors.New("failed to retrieve devices"))
-			return
+		deviceDtos := make([]resources.DeviceDto, len(devices))
+		for i, device := range devices {
+			deviceDtos[i] = resources.DeviceDto{}.DomainToDto(device)
 		}
 
-		if len(devices) == 0 {
-			log.Printf("DeviceController: No devices found for room ID: %d", roomId)
-		}
-
-		devicesDto := resources.DevicesDto{}.DomainToDto(devices)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(devicesDto)
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(deviceDtos)
 	}
 }
 

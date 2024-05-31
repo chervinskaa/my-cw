@@ -63,7 +63,7 @@ func New(conf config.Configuration) (Container, error) {
 	userController := controllers.NewUserController(userService, authService)
 	organizationController := controllers.NewOrganizationController(organizationService)
 	roomController := controllers.NewRoomController(roomService, organizationService)
-	deviceController := controllers.NewDeviceController(deviceService, roomService)
+	deviceController := controllers.NewDeviceController(deviceService, roomService, organizationService)
 
 	authMiddleware := middlewares.AuthMiddleware(tknAuth, authService, userService)
 

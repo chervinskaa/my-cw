@@ -11,7 +11,6 @@ import (
 type MeasurementService interface {
 	Save(m domain.Measurement) (domain.Measurement, error)
 	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) ([]domain.Measurement, error)
-	Find(id uint64) (interface{}, error)
 	Update(m domain.Measurement) (domain.Measurement, error)
 	Delete(id uint64) error
 }
@@ -44,15 +43,6 @@ func (s *measurementService) FindByDeviceAndDate(deviceId uint64, startDate, end
 	}
 
 	return measurements, nil
-}
-
-func (s *measurementService) Find(id uint64) (interface{}, error) {
-	measurement, err := s.measurementRepo.Find(id)
-	if err != nil {
-		log.Printf("MeasurementService: %s", err)
-		return nil, err
-	}
-	return measurement, nil
 }
 
 func (s *measurementService) Update(m domain.Measurement) (domain.Measurement, error) {
