@@ -30,6 +30,8 @@ type Services struct {
 	app.OrganizationService
 	app.RoomService
 	app.DeviceService
+	app.MeasurementService
+	app.EventService
 }
 
 type Controllers struct {
@@ -38,6 +40,8 @@ type Controllers struct {
 	OrganizationController controllers.OrganizationController
 	RoomController         controllers.RoomController
 	DeviceController       controllers.DeviceController
+	MeasurementController  controllers.MeasurementController
+	EventController        controllers.EventController
 }
 
 func New(conf config.Configuration) (Container, error) {
@@ -49,6 +53,8 @@ func New(conf config.Configuration) (Container, error) {
 	organizationRepository := database.NewOrganizationRepository(sess)
 	roomRepository := database.NewRoomRepository(sess)
 	deviceRepository := database.NewDeviceRepository(sess)
+	measurementRepository := database.NewMeasurementRepository(sess)
+	eventRepository := database.NewEventRepository(sess)
 
 	userService := app.NewUserService(userRepository)
 	authService := app.NewAuthService(sessionRepository, userRepository, tknAuth, conf.JwtTTL)
@@ -57,13 +63,17 @@ func New(conf config.Configuration) (Container, error) {
 	if err != nil {
 		return Container{}, err
 	}
-	deviceService := app.NewDeviceService(deviceRepository)
+	deviceService := app.NewDeviceService(deviceRepository, measurementRepository)
+	measurementService := app.NewMeasurementService(measurementRepository)
+	eventService := app.NewEventService(eventRepository)
 
 	authController := controllers.NewAuthController(authService, userService)
 	userController := controllers.NewUserController(userService, authService)
 	organizationController := controllers.NewOrganizationController(organizationService)
 	roomController := controllers.NewRoomController(roomService, organizationService)
 	deviceController := controllers.NewDeviceController(deviceService, roomService, organizationService)
+	measurementController := controllers.NewMeasurementController(measurementService, deviceService)
+	eventController := controllers.NewEventController(eventService)
 
 	authMiddleware := middlewares.AuthMiddleware(tknAuth, authService, userService)
 
@@ -77,6 +87,8 @@ func New(conf config.Configuration) (Container, error) {
 			organizationService,
 			roomService,
 			deviceService,
+			measurementService,
+			eventService,
 		},
 		Controllers: Controllers{
 			authController,
@@ -84,6 +96,8 @@ func New(conf config.Configuration) (Container, error) {
 			organizationController,
 			*roomController,
 			deviceController,
+			*measurementController,
+			*eventController,
 		},
 	}, nil
 }

@@ -15,23 +15,25 @@ type DeviceService interface {
 	FindAll() ([]domain.Device, error)
 	Update(d domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
-	UninstallDevice(deviceId uint64) error
+	UninstallDevice(device domain.Device) (domain.Device, error)
 	Delete(id uint64) error
 }
 
 type deviceService struct {
-	deviceRepo database.DeviceRepository
+	deviceRepo      database.DeviceRepository
+	measurementRepo database.MeasurementRepository
 }
 
-func NewDeviceService(dr database.DeviceRepository) DeviceService {
+func NewDeviceService(dr database.DeviceRepository, mr database.MeasurementRepository) DeviceService {
 	return &deviceService{
-		deviceRepo: dr,
+		deviceRepo:      dr,
+		measurementRepo: mr,
 	}
 }
 
-func (s *deviceService) Save(r domain.Device) (domain.Device, error) {
-	r.GUID = uuid.New().String()
-	createdDevice, err := s.deviceRepo.Save(r)
+func (s *deviceService) Save(dd domain.Device) (domain.Device, error) {
+	dd.GUID = uuid.New().String()
+	createdDevice, err := s.deviceRepo.Save(dd)
 	if err != nil {
 		log.Printf("DeviceService: Error saving device: %s", err)
 		return domain.Device{}, err
@@ -69,10 +71,10 @@ func (s *deviceService) Find(id uint64) (interface{}, error) {
 	return device, nil
 }
 
-func (s *deviceService) Update(r domain.Device) (domain.Device, error) {
-	log.Printf("DeviceService: Updating device %+v", r)
+func (s *deviceService) Update(dd domain.Device) (domain.Device, error) {
+	log.Printf("DeviceService: Updating device %+v", dd)
 
-	device, err := s.deviceRepo.Update(r)
+	device, err := s.deviceRepo.Update(dd)
 	if err != nil {
 		log.Printf("DeviceService: Error updating device: %s", err)
 		return domain.Device{}, err
@@ -92,14 +94,14 @@ func (s *deviceService) InstallDevice(deviceId uint64, roomId uint64) error {
 	return nil
 }
 
-func (s *deviceService) UninstallDevice(deviceId uint64) error {
-	err := s.deviceRepo.UninstallDevice(deviceId)
+func (s *deviceService) UninstallDevice(device domain.Device) (domain.Device, error) {
+	uninstalledDevice, err := s.deviceRepo.UninstallDevice(device)
 	if err != nil {
-		log.Printf("DeviceService: %s", err)
-		return err
+		log.Printf("DeviceService: Error uninstalling device: %s", err)
+		return domain.Device{}, err
 	}
-
-	return nil
+	log.Printf("DeviceService: Uninstalled device with ID %d", device.Id)
+	return uninstalledDevice, nil
 }
 
 func (s *deviceService) Delete(id uint64) error {

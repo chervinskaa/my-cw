@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"log"
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
@@ -52,20 +51,18 @@ func (s *roomService) Save(r domain.Room) (domain.Room, error) {
 }
 
 func (s *roomService) Find(id uint64) (interface{}, error) {
-	log.Printf("RoomService: Finding room with ID %d", id)
-
 	room, err := s.roomRepo.Find(id)
 	if err != nil {
-		log.Printf("RoomService: Error finding room: %s", err)
-		return domain.Room{}, err
+		log.Printf("OrganizationService: %s", err)
+		return nil, err
 	}
 
-	if room.Id == 0 {
-		log.Printf("RoomService: No room found with ID %d", id)
-		return domain.Room{}, fmt.Errorf("room not found")
+	room.Devices, err = s.deviceRepo.FindByRoomId(room.Id)
+	if err != nil {
+		log.Printf("OrganizationService: %s", err)
+		return nil, err
 	}
 
-	log.Printf("RoomService: Found room successfully: %+v", room)
 	return room, nil
 }
 

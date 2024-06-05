@@ -35,6 +35,7 @@ type Device struct {
 	Category         DeviceCategory
 	Units            *string
 	PowerConsumption *float64
+	Measurements     []Measurement
 	CreatedDate      time.Time
 	UpdatedDate      time.Time
 	DeletedDate      *time.Time

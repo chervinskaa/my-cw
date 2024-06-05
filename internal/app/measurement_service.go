@@ -10,8 +10,9 @@ import (
 
 type MeasurementService interface {
 	Save(m domain.Measurement) (domain.Measurement, error)
-	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) ([]domain.Measurement, error)
-	Update(m domain.Measurement) (domain.Measurement, error)
+	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) (interface{}, error)
+	Find(id uint64) (interface{}, error)
+	Update(dm domain.Measurement) (domain.Measurement, error)
 	Delete(id uint64) error
 }
 
@@ -25,17 +26,18 @@ func NewMeasurementService(mr database.MeasurementRepository) MeasurementService
 	}
 }
 
-func (s *measurementService) Save(m domain.Measurement) (domain.Measurement, error) {
-	measurement, err := s.measurementRepo.Save(m)
+func (s *measurementService) Save(dm domain.Measurement) (domain.Measurement, error) {
+	createdMeasurement, err := s.measurementRepo.Save(dm)
 	if err != nil {
-		log.Printf("MeasurementService: %s", err)
+		log.Printf("MeasurementService: Error saving measurement: %s", err)
 		return domain.Measurement{}, err
 	}
 
-	return measurement, nil
+	log.Printf("MeasurementService: Measurement saved successfully: %+v", createdMeasurement)
+	return createdMeasurement, nil
 }
 
-func (s *measurementService) FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) ([]domain.Measurement, error) {
+func (s *measurementService) FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) (interface{}, error) {
 	measurements, err := s.measurementRepo.FindByDeviceAndDate(deviceId, startDate, endDate)
 	if err != nil {
 		log.Printf("MeasurementService: %s", err)
@@ -45,8 +47,8 @@ func (s *measurementService) FindByDeviceAndDate(deviceId uint64, startDate, end
 	return measurements, nil
 }
 
-func (s *measurementService) Update(m domain.Measurement) (domain.Measurement, error) {
-	measurement, err := s.measurementRepo.Update(m)
+func (s *measurementService) Find(id uint64) (interface{}, error) {
+	measurement, err := s.measurementRepo.Find(id)
 	if err != nil {
 		log.Printf("MeasurementService: %s", err)
 		return domain.Measurement{}, err
@@ -55,12 +57,28 @@ func (s *measurementService) Update(m domain.Measurement) (domain.Measurement, e
 	return measurement, nil
 }
 
+func (s *measurementService) Update(dm domain.Measurement) (domain.Measurement, error) {
+	log.Printf("MeasurementService: Updating measurement %+v", dm)
+
+	measurement, err := s.measurementRepo.Update(dm)
+	if err != nil {
+		log.Printf("MeasurementService: Error updating measurement: %s", err)
+		return domain.Measurement{}, err
+	}
+
+	log.Printf("MeasurementService: Measurement updated successfully: %+v", measurement)
+	return measurement, nil
+}
+
 func (s *measurementService) Delete(id uint64) error {
+	log.Printf("MeasurementService: Deleting measurement with ID %d", id)
+
 	err := s.measurementRepo.Delete(id)
 	if err != nil {
-		log.Printf("MeasurementService: %s", err)
+		log.Printf("MeasurementService: Error deleting measurement: %s", err)
 		return err
 	}
 
+	log.Printf("MeasurementService: Measurement deleted successfully")
 	return nil
 }

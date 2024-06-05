@@ -31,9 +31,10 @@ type DeviceRepository interface {
 	Save(d domain.Device) (domain.Device, error)
 	FindAll() ([]domain.Device, error)
 	Find(id uint64) (domain.Device, error)
+	FindByRoomId(roomId uint64) ([]domain.Device, error)
 	Update(d domain.Device) (domain.Device, error)
 	InstallDevice(deviceId uint64, roomId uint64) error
-	UninstallDevice(deviceId uint64) error
+	UninstallDevice(dd domain.Device) (domain.Device, error)
 	Delete(id uint64) error
 }
 
@@ -51,7 +52,7 @@ func NewDeviceRepository(dbSession db.Session) DeviceRepository {
 
 func (r *deviceRepository) Save(dd domain.Device) (domain.Device, error) {
 	if dd.Category == domain.Actuator && dd.PowerConsumption == nil {
-		return domain.Device{}, errors.New("power consumption is required for ACTUATOR")
+		return domain.Device{}, errors.New("power consumption is required for Actuator")
 	}
 	if dd.Category == domain.Sensor && dd.Units == nil {
 		return domain.Device{}, errors.New("units is required for SENSOR")
@@ -96,6 +97,23 @@ func (r *deviceRepository) Find(id uint64) (domain.Device, error) {
 	return dd, nil
 }
 
+func (r *deviceRepository) FindByRoomId(roomId uint64) ([]domain.Device, error) {
+	var devices []device
+	err := r.coll.Find(db.Cond{"room_id": roomId, "deleted_date": nil}).All(&devices)
+	if err != nil {
+		if err == db.ErrNoMoreRows {
+			log.Printf("DeviceRepository: No devices found for room ID %d", roomId)
+			return []domain.Device{}, nil
+		}
+		log.Printf("DeviceRepository: Error finding devices for room ID %d: %s", roomId, err)
+		return nil, err
+	}
+
+	log.Printf("DeviceRepository: Found %d devices for room ID %d", len(devices), roomId)
+
+	return r.mapModelToDomainCollection(devices), nil
+}
+
 func (r *deviceRepository) Update(dd domain.Device) (domain.Device, error) {
 	device := r.mapDomainToModel(dd)
 	device.UpdatedDate = time.Now()
@@ -117,10 +135,19 @@ func (r *deviceRepository) InstallDevice(deviceId uint64, roomId uint64) error {
 	return err
 }
 
-func (r *deviceRepository) UninstallDevice(deviceId uint64) error {
-	query := "UPDATE devices SET room_id = NULL, updated_date = ? WHERE id = ?"
-	_, err := r.sess.SQL().Exec(query, time.Now(), deviceId)
-	return err
+func (r *deviceRepository) UninstallDevice(dd domain.Device) (domain.Device, error) {
+	device := r.mapDomainToModel(dd)
+	device.UpdatedDate = time.Now()
+	device.RoomId = nil
+	log.Printf("DeviceRepository: Updating device %+v", device)
+	err := r.coll.Find(db.Cond{"id": device.Id, "deleted_date": nil}).Update(&device)
+	if err != nil {
+		log.Printf("DeviceRepository: Error updating device: %s", err)
+		return domain.Device{}, err
+	}
+	dd = r.mapModelToDomain(device)
+	log.Printf("DeviceRepository: Updated device %+v", dd)
+	return dd, nil
 }
 
 func (r *deviceRepository) Delete(id uint64) error {

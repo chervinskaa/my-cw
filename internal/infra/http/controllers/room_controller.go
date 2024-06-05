@@ -71,10 +71,8 @@ func (c *RoomController) Find() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		room := r.Context().Value(RoKey).(domain.Room)
 
-		roomDto := resources.RoomDto{}.DomainToDto(room)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(roomDto)
+		var roomDto resources.RoomDto
+		Success(w, roomDto.DomainToDto(room))
 	}
 }
 

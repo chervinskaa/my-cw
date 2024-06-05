@@ -188,17 +188,24 @@ func (c *DeviceController) Install() http.HandlerFunc {
 
 func (c *DeviceController) Uninstall() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		device := r.Context().Value(DevKey).(domain.Device)
+		// Отримання пристрою з контексту
+		device, ok := r.Context().Value(DevKey).(domain.Device)
+		if !ok {
+			log.Printf("DeviceController: Error getting device from context")
+			InternalServerError(w, errors.New("failed to get device from context"))
+			return
+		}
 
-		device.RoomId = nil
-		updatedDevice, err := c.DeviceService.Update(device)
+		// Виклик сервісу для від'єднання пристрою
+		uninstalledDevice, err := c.DeviceService.UninstallDevice(device)
 		if err != nil {
 			log.Printf("DeviceController: Error uninstalling device: %s", err)
 			InternalServerError(w, errors.New("failed to uninstall device"))
 			return
 		}
 
-		deviceDto := resources.DeviceDto{}.DomainToDto(updatedDevice)
+		// Створення DTO і повернення відповіді
+		deviceDto := resources.DeviceDto{}.DomainToDto(uninstalledDevice)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(deviceDto)

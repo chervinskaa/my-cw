@@ -9,7 +9,7 @@ import (
 type MeasurementDto struct {
 	Id          uint64    `json:"id"`
 	DeviceId    uint64    `json:"device_id"`
-	RoomId      uint64    `json:"room_id"`
+	RoomId      *uint64   `json:"room_id"`
 	Value       float64   `json:"value"`
 	CreatedDate time.Time `json:"created_date"`
 	UpdatedDate time.Time `json:"updated_date"`

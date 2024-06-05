@@ -54,6 +54,8 @@ func Router(cont container.Container) http.Handler {
 				OrganizationRouter(apiRouter, cont.OrganizationController, cont.OrganizationService)
 				RoomRouter(apiRouter, cont.RoomController, cont.RoomService)
 				DeviceRouter(apiRouter, cont.DeviceController, cont.DeviceService)
+				MeasurementRouter(apiRouter, cont.MeasurementController, cont.MeasurementService)
+				EventRouter(apiRouter, cont.EventController, cont.EventService)
 				apiRouter.Handle("/*", NotFoundJSON())
 			})
 		})
@@ -193,7 +195,48 @@ func DeviceRouter(r chi.Router, dc controllers.DeviceController, ds app.DeviceSe
 	})
 }
 
-// Ця функція не змінилася
+func MeasurementRouter(r chi.Router, cm controllers.MeasurementController, ms app.MeasurementService) {
+	mOpom := middlewares.PathObject("measurementId", controllers.MeasurementKey, ms)
+
+	r.Route("/measurements", func(apiRouter chi.Router) {
+		apiRouter.Post(
+			"/",
+			cm.Save(),
+		)
+		apiRouter.With(mOpom).Get(
+			"/{measurementId}",
+			cm.Find(),
+		)
+		apiRouter.With(mOpom).Get(
+			"/{deviceId}/{startDate}/{endDate}",
+			cm.FindByDeviceAndDate(),
+		)
+		apiRouter.With(mOpom).Put(
+			"/{measurementId}",
+			cm.Update(),
+		)
+		apiRouter.With(mOpom).Delete(
+			"/{measurementId}",
+			cm.Delete(),
+		)
+	})
+}
+
+func EventRouter(r chi.Router, ec controllers.EventController, es app.EventService) {
+	eOpom := middlewares.PathObject("eventId", controllers.EventKey, es)
+
+	r.Route("/events", func(apiRouter chi.Router) {
+		apiRouter.Post(
+			"/",
+			ec.Save(),
+		)
+		apiRouter.With(eOpom).Get(
+			"/{measurementId}",
+			ec.Find(),
+		)
+	})
+}
+
 func NotFoundJSON() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

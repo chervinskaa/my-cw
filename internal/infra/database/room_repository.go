@@ -22,8 +22,8 @@ type room struct {
 
 type RoomRepository interface {
 	Save(r domain.Room) (domain.Room, error)
-	FindByOrgId(orgId uint64) ([]domain.Room, error)
 	Find(id uint64) (domain.Room, error)
+	FindByOrgId(orgId uint64) ([]domain.Room, error)
 	FindAll() ([]domain.Room, error)
 	Update(r domain.Room) (domain.Room, error)
 	Delete(id uint64) error
@@ -54,6 +54,22 @@ func (r *roomRepository) Save(dr domain.Room) (domain.Room, error) {
 	return dr, nil
 }
 
+func (r *roomRepository) Find(id uint64) (domain.Room, error) {
+	var roomModel room
+	err := r.coll.Find(db.Cond{"id": id}).One(&roomModel)
+	if err != nil {
+		if err == db.ErrNoMoreRows {
+			log.Printf("RoomRepository: No room found with ID %d", id)
+			return domain.Room{}, nil
+		}
+		log.Printf("RoomRepository: Error finding room with ID %d: %s", id, err)
+		return domain.Room{}, err
+	}
+	dr := r.mapModelToDomain(roomModel)
+	log.Printf("RoomRepository: Found room with ID %d: %+v", id, dr)
+	return dr, nil
+}
+
 func (r *roomRepository) FindByOrgId(orgId uint64) ([]domain.Room, error) {
 	var rooms []room
 	err := r.coll.Find(db.Cond{"organization_id": orgId, "deleted_date": nil}).All(&rooms)
@@ -69,22 +85,6 @@ func (r *roomRepository) FindByOrgId(orgId uint64) ([]domain.Room, error) {
 	log.Printf("RoomRepository: Found %d rooms for organization ID %d", len(rooms), orgId)
 
 	return r.mapModelToDomainCollection(rooms), nil
-}
-
-func (r *roomRepository) Find(id uint64) (domain.Room, error) {
-	var roomModel room
-	err := r.coll.Find(db.Cond{"id": id}).One(&roomModel)
-	if err != nil {
-		if err == db.ErrNoMoreRows {
-			log.Printf("RoomRepository: No room found with ID %d", id)
-			return domain.Room{}, nil
-		}
-		log.Printf("RoomRepository: Error finding room with ID %d: %s", id, err)
-		return domain.Room{}, err
-	}
-	domainRoom := r.mapModelToDomain(roomModel)
-	log.Printf("RoomRepository: Found room with ID %d: %+v", id, domainRoom)
-	return domainRoom, nil
 }
 
 func (r *roomRepository) FindAll() ([]domain.Room, error) {
