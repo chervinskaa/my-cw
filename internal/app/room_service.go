@@ -72,6 +72,16 @@ func (s *roomService) FindAll() ([]domain.Room, error) {
 		log.Printf("RoomService: Error finding all rooms: %s", err)
 		return nil, err
 	}
+
+	for i, room := range rooms {
+		devices, err := s.deviceRepo.FindByRoomId(room.Id)
+		if err != nil {
+			log.Printf("RoomService: Error finding devices for room %d: %s", room.Id, err)
+			return nil, err
+		}
+		rooms[i].Devices = devices
+	}
+
 	log.Printf("RoomService: Found %d rooms", len(rooms))
 	return rooms, nil
 }

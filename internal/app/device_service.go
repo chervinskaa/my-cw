@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
@@ -22,12 +21,14 @@ type DeviceService interface {
 type deviceService struct {
 	deviceRepo      database.DeviceRepository
 	measurementRepo database.MeasurementRepository
+	eventRepo       database.EventRepository
 }
 
-func NewDeviceService(dr database.DeviceRepository, mr database.MeasurementRepository) DeviceService {
+func NewDeviceService(dr database.DeviceRepository, mr database.MeasurementRepository, er database.EventRepository) DeviceService {
 	return &deviceService{
 		deviceRepo:      dr,
 		measurementRepo: mr,
+		eventRepo:       er,
 	}
 }
 
@@ -58,16 +59,18 @@ func (s *deviceService) Find(id uint64) (interface{}, error) {
 
 	device, err := s.deviceRepo.Find(id)
 	if err != nil {
-		log.Printf("DeviceService: Error finding device: %s", err)
-		return domain.Device{}, err
+		log.Printf("DeviceService: %s", err)
+		return nil, err
 	}
 
-	if device.Id == 0 {
-		log.Printf("DeviceService: No device found with ID %d", id)
-		return domain.Device{}, fmt.Errorf("device not found")
+	measurements, err := s.measurementRepo.FindByDeviceId(device.Id)
+	if err != nil {
+		log.Printf("DeviceService: %s", err)
+		return nil, err
 	}
 
-	log.Printf("DeviceService: Found device successfully: %+v", device)
+	device.Measurements = measurements
+
 	return device, nil
 }
 

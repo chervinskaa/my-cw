@@ -6,6 +6,10 @@ import (
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
 )
 
+type MeasurementsDto struct {
+	Measurements []MeasurementDto `json:"measurements"`
+}
+
 type MeasurementDto struct {
 	Id          uint64    `json:"id"`
 	DeviceId    uint64    `json:"device_id"`

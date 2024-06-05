@@ -11,21 +11,33 @@ type DevicesDto struct {
 }
 
 type DeviceDto struct {
-	Id               uint64    `json:"id"`
-	OrganizationId   uint64    `json:"organizationId"`
-	RoomId           *uint64   `json:"room_id"`
-	GUID             string    `json:"guid"`
-	InventoryNumber  string    `json:"inventoryNumber"`
-	SerialNumber     string    `json:"serialNumber"`
-	Characteristics  string    `json:"characteristics"`
-	Category         string    `json:"category"`
-	Units            *string   `json:"units"`
-	PowerConsumption *float64  `json:"power_consumption"`
-	CreatedDate      time.Time `json:"createdDate"`
-	UpdatedDate      time.Time `json:"updatedDate"`
+	Id               uint64           `json:"id"`
+	OrganizationId   uint64           `json:"organizationId"`
+	RoomId           *uint64          `json:"room_id"`
+	GUID             string           `json:"guid"`
+	InventoryNumber  string           `json:"inventoryNumber"`
+	SerialNumber     string           `json:"serialNumber"`
+	Characteristics  string           `json:"characteristics"`
+	Category         string           `json:"category"`
+	Units            *string          `json:"units"`
+	Measurements     []MeasurementDto `json:"measurements"`
+	PowerConsumption *float64         `json:"power_consumption"`
+	Events           []EventDto       `json:"events"`
+	CreatedDate      time.Time        `json:"createdDate"`
+	UpdatedDate      time.Time        `json:"updatedDate"`
 }
 
 func (d DeviceDto) DomainToDto(o domain.Device) DeviceDto {
+	var measurements []MeasurementDto
+	for _, dm := range o.Measurements {
+		mDto := MeasurementDto{}.DomainToDto(dm)
+		measurements = append(measurements, mDto)
+	}
+	var events []EventDto
+	for _, de := range o.Events {
+		eDto := EventDto{}.DomainToDto(de)
+		events = append(events, eDto)
+	}
 	return DeviceDto{
 		Id:               o.Id,
 		OrganizationId:   o.OrganizationId,

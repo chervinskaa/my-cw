@@ -63,7 +63,7 @@ func New(conf config.Configuration) (Container, error) {
 	if err != nil {
 		return Container{}, err
 	}
-	deviceService := app.NewDeviceService(deviceRepository, measurementRepository)
+	deviceService := app.NewDeviceService(deviceRepository, measurementRepository, eventRepository)
 	measurementService := app.NewMeasurementService(measurementRepository)
 	eventService := app.NewEventService(eventRepository)
 

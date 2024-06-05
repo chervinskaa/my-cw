@@ -41,11 +41,24 @@ func (r *eventRepository) Save(de domain.Event) (domain.Event, error) {
 		return domain.Event{}, errors.New("invalid action")
 	}
 
+	deviceRepo := NewDeviceRepository(r.coll.Session())
+	device, err := deviceRepo.Find(de.DeviceId)
+	if err != nil {
+		log.Printf("EventRepository: Error fetching device: %s", err)
+		return domain.Event{}, err
+	}
+
+	if device.Category != domain.Actuator {
+		err := errors.New("only actuators can have events")
+		log.Printf("EventRepository: %s", err)
+		return domain.Event{}, err
+	}
+
 	event := r.mapDomainToModel(de)
 	now := time.Now()
 	event.CreatedDate, event.UpdatedDate = now, now
 	log.Printf("EventRepository: Saving event %+v", event)
-	err := r.coll.InsertReturning(&event)
+	err = r.coll.InsertReturning(&event)
 	if err != nil {
 		log.Printf("EventRepository: Error saving event: %s", err)
 		return domain.Event{}, err
