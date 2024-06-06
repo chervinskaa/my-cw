@@ -5,14 +5,12 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/app"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/requests"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/resources"
-	"github.com/go-chi/chi/v5"
 )
 
 type MeasurementController struct {
@@ -46,7 +44,7 @@ func (c *MeasurementController) Save() http.HandlerFunc {
 
 		device, err := c.DeviceService.Find(measurementRequest.DeviceId)
 		if err != nil {
-			log.Printf("MeasurementController: Error finding device: %s", err)
+			log.Printf("MeasurementController: Error finding device with ID %d: %s", measurementRequest.DeviceId, err)
 			BadRequest(w, errors.New("device not found"))
 			return
 		}
@@ -69,7 +67,7 @@ func (c *MeasurementController) Save() http.HandlerFunc {
 
 		createdMeasurement, err := c.MeasurementService.Save(measurement)
 		if err != nil {
-			log.Printf("MeasurementController: %s", err)
+			log.Printf("MeasurementController: Error saving measurement: %s", err)
 			InternalServerError(w, errors.New("failed to save measurement"))
 			return
 		}
@@ -83,19 +81,9 @@ func (c *MeasurementController) Save() http.HandlerFunc {
 
 func (c *MeasurementController) FindByDeviceAndDate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		deviceID := chi.URLParam(r, "deviceId")
-		if deviceID == "" {
-			http.Error(w, "Invalid device_id", http.StatusBadRequest)
-			return
-		}
+		device := r.Context().Value(DevKey).(domain.Device)
 
-		deviceId, err := strconv.ParseUint(deviceID, 10, 64)
-		if err != nil {
-			http.Error(w, "Invalid device_id", http.StatusBadRequest)
-			return
-		}
-
-		startDateStr := chi.URLParam(r, "startDate")
+		startDateStr := r.URL.Query().Get("startDate")
 		if startDateStr == "" {
 			http.Error(w, "Invalid start_date", http.StatusBadRequest)
 			return
@@ -107,7 +95,7 @@ func (c *MeasurementController) FindByDeviceAndDate() http.HandlerFunc {
 			return
 		}
 
-		endDateStr := chi.URLParam(r, "endDate")
+		endDateStr := r.URL.Query().Get("endDate")
 		log.Printf("Received endDateStr: %s", endDateStr) // Add log here
 		if endDateStr == "" {
 			http.Error(w, "Invalid end_date", http.StatusBadRequest)
@@ -120,7 +108,7 @@ func (c *MeasurementController) FindByDeviceAndDate() http.HandlerFunc {
 			return
 		}
 
-		measurements, err := c.MeasurementService.FindByDeviceAndDate(deviceId, startDate, endDate)
+		measurements, err := c.MeasurementService.FindByDeviceAndDate(device.Id, startDate, endDate)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -143,48 +131,5 @@ func (c *MeasurementController) Find() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(measurementDto)
-	}
-}
-
-func (c *MeasurementController) Update() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		measurement := r.Context().Value(MeasurementKey).(domain.Measurement)
-
-		var measurementRequest requests.MeasurementRequest
-		err := json.NewDecoder(r.Body).Decode(&measurementRequest)
-		if err != nil {
-			log.Printf("MeasurementController: Error decoding request body: %s", err)
-			BadRequest(w, errors.New("invalid request payload"))
-			return
-		}
-
-		measurement.Value = measurementRequest.Value
-		measurement.DeviceId = measurementRequest.DeviceId
-		updatedMeasurement, err := c.MeasurementService.Update(measurement)
-		if err != nil {
-			log.Printf("MeasurementController: Error updating measurement: %s", err)
-			InternalServerError(w, errors.New("failed to update measurement"))
-			return
-		}
-
-		measurementDto := resources.MeasurementDto{}.DomainToDto(updatedMeasurement)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(measurementDto)
-	}
-}
-
-func (c *MeasurementController) Delete() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		measurement := r.Context().Value(MeasurementKey).(domain.Measurement)
-
-		err := c.MeasurementService.Delete(measurement.Id)
-		if err != nil {
-			log.Printf("MeasurementController: %s", err)
-			InternalServerError(w, err)
-			return
-		}
-
-		Ok(w)
 	}
 }

@@ -12,8 +12,6 @@ type MeasurementService interface {
 	Save(m domain.Measurement) (domain.Measurement, error)
 	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) (interface{}, error)
 	Find(id uint64) (interface{}, error)
-	Update(dm domain.Measurement) (domain.Measurement, error)
-	Delete(id uint64) error
 }
 
 type measurementService struct {
@@ -55,30 +53,4 @@ func (s *measurementService) Find(id uint64) (interface{}, error) {
 	}
 
 	return measurement, nil
-}
-
-func (s *measurementService) Update(dm domain.Measurement) (domain.Measurement, error) {
-	log.Printf("MeasurementService: Updating measurement %+v", dm)
-
-	measurement, err := s.measurementRepo.Update(dm)
-	if err != nil {
-		log.Printf("MeasurementService: Error updating measurement: %s", err)
-		return domain.Measurement{}, err
-	}
-
-	log.Printf("MeasurementService: Measurement updated successfully: %+v", measurement)
-	return measurement, nil
-}
-
-func (s *measurementService) Delete(id uint64) error {
-	log.Printf("MeasurementService: Deleting measurement with ID %d", id)
-
-	err := s.measurementRepo.Delete(id)
-	if err != nil {
-		log.Printf("MeasurementService: Error deleting measurement: %s", err)
-		return err
-	}
-
-	log.Printf("MeasurementService: Measurement deleted successfully")
-	return nil
 }

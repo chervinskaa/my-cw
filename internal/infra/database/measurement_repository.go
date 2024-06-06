@@ -26,8 +26,6 @@ type MeasurementRepository interface {
 	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) ([]domain.Measurement, error)
 	Find(id uint64) (domain.Measurement, error)
 	FindByDeviceId(deviceId uint64) ([]domain.Measurement, error)
-	Update(dm domain.Measurement) (domain.Measurement, error)
-	Delete(id uint64) error
 }
 
 type measurementRepository struct {
@@ -43,8 +41,9 @@ func NewMeasurementRepository(dbSession db.Session) MeasurementRepository {
 }
 
 func (r *measurementRepository) Save(dm domain.Measurement) (domain.Measurement, error) {
-	var device domain.Device
-	err := r.sess.Collection("devices").Find(db.Cond{"id": dm.DeviceId}).One(&device)
+
+	deviceRepo := NewDeviceRepository(r.coll.Session())
+	device, err := deviceRepo.Find(dm.DeviceId)
 	if err != nil {
 		log.Printf("MeasurementRepository: Error fetching device: %s", err)
 		return domain.Measurement{}, err
@@ -52,21 +51,23 @@ func (r *measurementRepository) Save(dm domain.Measurement) (domain.Measurement,
 
 	if device.Category != domain.Sensor {
 		err := errors.New("only sensors can have measurements")
-		log.Printf("MeasurementRepository: %s", err)
+		log.Printf("MeasurementRepository: Device ID %d is not a sensor", dm.DeviceId)
 		return domain.Measurement{}, err
 	}
 
 	measurement := r.mapDomainToModel(dm)
 	now := time.Now()
 	measurement.CreatedDate, measurement.UpdatedDate = now, now
+
 	log.Printf("MeasurementRepository: Saving measurement %+v", measurement)
 	err = r.coll.InsertReturning(&measurement)
 	if err != nil {
 		log.Printf("MeasurementRepository: Error saving measurement: %s", err)
 		return domain.Measurement{}, err
 	}
+
 	dm = r.mapModelToDomain(measurement)
-	log.Printf("MeasurementRepository: Saved measurement %+v", dm)
+	log.Printf("MeasurementRepository: Measurement saved successfully: %+v", dm)
 	return dm, nil
 }
 
@@ -89,38 +90,20 @@ func (r *measurementRepository) Find(id uint64) (domain.Measurement, error) {
 }
 
 func (r *measurementRepository) FindByDeviceId(deviceId uint64) ([]domain.Measurement, error) {
-	var measurements []domain.Measurement
-	err := r.coll.Find(db.Cond{"device_id": deviceId}).All(&measurements)
+	var measurements []measurement
+	err := r.coll.Find(db.Cond{"device_id": deviceId, "deleted_date": nil}).All(&measurements)
 	if err != nil {
+		if err == db.ErrNoMoreRows {
+			log.Printf("MeasurementRepository: No measurements found for device ID %d", deviceId)
+			return []domain.Measurement{}, nil
+		}
 		log.Printf("MeasurementRepository: Error finding measurements for device ID %d: %s", deviceId, err)
 		return nil, err
 	}
-	return measurements, nil
-}
 
-func (r *measurementRepository) Update(dm domain.Measurement) (domain.Measurement, error) {
-	measurement := r.mapDomainToModel(dm)
-	measurement.UpdatedDate = time.Now()
-	log.Printf("MeasurementRepository: Updating measurement %+v", measurement)
-	err := r.coll.Find(db.Cond{"id": measurement.Id, "deleted_date": nil}).Update(&measurement)
-	if err != nil {
-		log.Printf("MeasurementRepository: Error updating measurement: %s", err)
-		return domain.Measurement{}, err
-	}
-	dm = r.mapModelToDomain(measurement)
-	log.Printf("MeasurementRepository: Updated measurement %+v", dm)
-	return dm, nil
-}
+	log.Printf("MeasurementRepository: Found %d measurements for device ID %d", len(measurements), deviceId)
 
-func (r *measurementRepository) Delete(id uint64) error {
-	log.Printf("MeasurementRepository: Deleting measurement with id %d", id)
-	err := r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).Update(map[string]interface{}{"deleted_date": time.Now()})
-	if err != nil {
-		log.Printf("MeasurementRepository: Error deleting measurement with id %d: %s", id, err)
-		return err
-	}
-	log.Printf("MeasurementRepository: Deleted measurement with id %d", id)
-	return nil
+	return r.mapModelToDomainCollection(measurements), nil
 }
 
 func (r *measurementRepository) mapDomainToModel(d domain.Measurement) measurement {

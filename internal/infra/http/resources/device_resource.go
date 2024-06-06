@@ -48,7 +48,9 @@ func (d DeviceDto) DomainToDto(o domain.Device) DeviceDto {
 		Characteristics:  o.Characteristics,
 		Category:         string(o.Category),
 		Units:            o.Units,
+		Measurements:     measurements,
 		PowerConsumption: o.PowerConsumption,
+		Events:           events,
 		CreatedDate:      o.CreatedDate,
 		UpdatedDate:      o.UpdatedDate,
 	}

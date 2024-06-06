@@ -188,7 +188,7 @@ func (c *DeviceController) Install() http.HandlerFunc {
 
 func (c *DeviceController) Uninstall() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Отримання пристрою з контексту
+
 		device, ok := r.Context().Value(DevKey).(domain.Device)
 		if !ok {
 			log.Printf("DeviceController: Error getting device from context")
@@ -196,7 +196,6 @@ func (c *DeviceController) Uninstall() http.HandlerFunc {
 			return
 		}
 
-		// Виклик сервісу для від'єднання пристрою
 		uninstalledDevice, err := c.DeviceService.UninstallDevice(device)
 		if err != nil {
 			log.Printf("DeviceController: Error uninstalling device: %s", err)
@@ -204,7 +203,6 @@ func (c *DeviceController) Uninstall() http.HandlerFunc {
 			return
 		}
 
-		// Створення DTO і повернення відповіді
 		deviceDto := resources.DeviceDto{}.DomainToDto(uninstalledDevice)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

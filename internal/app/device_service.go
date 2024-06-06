@@ -71,6 +71,12 @@ func (s *deviceService) Find(id uint64) (interface{}, error) {
 
 	device.Measurements = measurements
 
+	events, err := s.eventRepo.FindByDeviceId(device.Id)
+	if err != nil {
+		return domain.Device{}, err
+	}
+	device.Events = events
+
 	return device, nil
 }
 
