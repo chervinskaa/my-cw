@@ -196,16 +196,17 @@ func DeviceRouter(r chi.Router, dc controllers.DeviceController, ds app.DeviceSe
 }
 
 func MeasurementRouter(r chi.Router, cm controllers.MeasurementController, ms app.MeasurementService, ds app.DeviceService) {
+	// mOpom := middlewares.PathObject("measurementId", controllers.MeasurementKey, ms)
 	dOpom := middlewares.PathObject("deviceId", controllers.DevKey, ds)
 	r.Route("/measurements", func(apiRouter chi.Router) {
 		apiRouter.Post(
 			"/",
 			cm.Save(),
 		)
-		// apiRouter.With(mOpom).Get(
-		// 	"/{measurementId}",
-		// 	cm.Find(),
-		// )
+		apiRouter.Get(
+			"/",
+			cm.FindAll(),
+		)
 		apiRouter.With(dOpom).Get(
 			"/{deviceId}",
 			cm.FindByDeviceAndDate(),
@@ -214,17 +215,18 @@ func MeasurementRouter(r chi.Router, cm controllers.MeasurementController, ms ap
 }
 
 func EventRouter(r chi.Router, ec controllers.EventController, es app.EventService) {
-	eOpom := middlewares.PathObject("eventId", controllers.EventKey, es)
+	// eOpom := middlewares.PathObject("eventId", controllers.EventKey, es)
 
 	r.Route("/events", func(apiRouter chi.Router) {
 		apiRouter.Post(
 			"/",
 			ec.Save(),
 		)
-		apiRouter.With(eOpom).Get(
-			"/{measurementId}",
-			ec.Find(),
+		apiRouter.Get(
+			"/",
+			ec.FindAll(),
 		)
+
 	})
 }
 

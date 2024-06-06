@@ -133,3 +133,23 @@ func (c *MeasurementController) Find() http.HandlerFunc {
 		json.NewEncoder(w).Encode(measurementDto)
 	}
 }
+
+func (c MeasurementController) FindAll() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		measurements, err := c.MeasurementService.FindAll()
+		if err != nil {
+			log.Printf("MeasurementController: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		measurementDtos := make([]resources.MeasurementDto, len(measurements))
+		for i, measurement := range measurements {
+			measurementDtos[i] = resources.MeasurementDto{}.DomainToDto(measurement)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(measurementDtos)
+	}
+}

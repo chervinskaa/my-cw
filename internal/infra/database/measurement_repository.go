@@ -26,6 +26,7 @@ type MeasurementRepository interface {
 	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) ([]domain.Measurement, error)
 	Find(id uint64) (domain.Measurement, error)
 	FindByDeviceId(deviceId uint64) ([]domain.Measurement, error)
+	FindAll() ([]domain.Measurement, error)
 }
 
 type measurementRepository struct {
@@ -104,6 +105,16 @@ func (r *measurementRepository) FindByDeviceId(deviceId uint64) ([]domain.Measur
 	log.Printf("MeasurementRepository: Found %d measurements for device ID %d", len(measurements), deviceId)
 
 	return r.mapModelToDomainCollection(measurements), nil
+}
+
+func (r *measurementRepository) FindAll() ([]domain.Measurement, error) {
+	var measurements []measurement
+	err := r.coll.Find(db.Cond{"deleted_date": nil}).All(&measurements)
+	if err != nil {
+		return nil, err
+	}
+	res := r.mapModelToDomainCollection(measurements)
+	return res, nil
 }
 
 func (r *measurementRepository) mapDomainToModel(d domain.Measurement) measurement {

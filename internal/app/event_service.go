@@ -11,6 +11,7 @@ import (
 type EventService interface {
 	Save(de domain.Event) (domain.Event, error)
 	Find(id uint64) (interface{}, error)
+	FindAll() ([]domain.Event, error)
 }
 
 type eventService struct {
@@ -43,4 +44,14 @@ func (s *eventService) Find(id uint64) (interface{}, error) {
 	}
 
 	return event, nil
+}
+
+func (s *eventService) FindAll() ([]domain.Event, error) {
+	events, err := s.eventRepo.FindAll()
+	if err != nil {
+		log.Printf("EventService: %s", err)
+		return nil, err
+	}
+
+	return events, nil
 }

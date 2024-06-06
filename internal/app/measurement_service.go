@@ -12,6 +12,7 @@ type MeasurementService interface {
 	Save(m domain.Measurement) (domain.Measurement, error)
 	FindByDeviceAndDate(deviceId uint64, startDate, endDate time.Time) (interface{}, error)
 	Find(id uint64) (interface{}, error)
+	FindAll() ([]domain.Measurement, error)
 }
 
 type measurementService struct {
@@ -53,4 +54,14 @@ func (s *measurementService) Find(id uint64) (interface{}, error) {
 	}
 
 	return measurement, nil
+}
+
+func (s *measurementService) FindAll() ([]domain.Measurement, error) {
+	measurements, err := s.measurementRepo.FindAll()
+	if err != nil {
+		log.Printf("MeasurementService: %s", err)
+		return nil, err
+	}
+
+	return measurements, nil
 }

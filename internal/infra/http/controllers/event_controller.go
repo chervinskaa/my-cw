@@ -63,3 +63,23 @@ func (c *EventController) Find() http.HandlerFunc {
 		json.NewEncoder(w).Encode(eventDto)
 	}
 }
+
+func (c EventController) FindAll() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		events, err := c.eventService.FindAll()
+		if err != nil {
+			log.Printf("EventController: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		eventDtos := make([]resources.EventDto, len(events))
+		for i, event := range events {
+			eventDtos[i] = resources.EventDto{}.DomainToDto(event)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(eventDtos)
+	}
+}

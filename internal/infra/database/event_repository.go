@@ -25,6 +25,7 @@ type EventRepository interface {
 	Save(de domain.Event) (domain.Event, error)
 	Find(id uint64) (domain.Event, error)
 	FindByDeviceId(deviceId uint64) ([]domain.Event, error)
+	FindAll() ([]domain.Event, error)
 }
 
 type eventRepository struct {
@@ -76,6 +77,16 @@ func (r *eventRepository) Find(id uint64) (domain.Event, error) {
 		return domain.Event{}, err
 	}
 	return r.mapModelToDomain(eventModel), nil
+}
+
+func (r *eventRepository) FindAll() ([]domain.Event, error) {
+	var events []event
+	err := r.coll.Find(db.Cond{"deleted_date": nil}).All(&events)
+	if err != nil {
+		return nil, err
+	}
+	res := r.mapModelToDomainCollection(events)
+	return res, nil
 }
 
 func (r *eventRepository) FindByDeviceId(deviceId uint64) ([]domain.Event, error) {
