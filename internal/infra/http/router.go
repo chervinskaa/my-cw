@@ -55,7 +55,7 @@ func Router(cont container.Container) http.Handler {
 				RoomRouter(apiRouter, cont.RoomController, cont.RoomService)
 				DeviceRouter(apiRouter, cont.DeviceController, cont.DeviceService)
 				MeasurementRouter(apiRouter, cont.MeasurementController, cont.MeasurementService, cont.DeviceService)
-				EventRouter(apiRouter, cont.EventController, cont.EventService)
+				EventRouter(apiRouter, cont.EventController, cont.EventService, cont.OrganizationService, cont.RoomService)
 				apiRouter.Handle("/*", NotFoundJSON())
 			})
 		})
@@ -196,7 +196,6 @@ func DeviceRouter(r chi.Router, dc controllers.DeviceController, ds app.DeviceSe
 }
 
 func MeasurementRouter(r chi.Router, cm controllers.MeasurementController, ms app.MeasurementService, ds app.DeviceService) {
-	// mOpom := middlewares.PathObject("measurementId", controllers.MeasurementKey, ms)
 	dOpom := middlewares.PathObject("deviceId", controllers.DevKey, ds)
 	r.Route("/measurements", func(apiRouter chi.Router) {
 		apiRouter.Post(
@@ -214,8 +213,9 @@ func MeasurementRouter(r chi.Router, cm controllers.MeasurementController, ms ap
 	})
 }
 
-func EventRouter(r chi.Router, ec controllers.EventController, es app.EventService) {
-	// eOpom := middlewares.PathObject("eventId", controllers.EventKey, es)
+func EventRouter(r chi.Router, ec controllers.EventController, es app.EventService, os app.OrganizationService, rs app.RoomService) {
+	opom := middlewares.PathObject("orgId", controllers.OrgKey, os)
+	rOpom := middlewares.PathObject("roomId", controllers.RoKey, rs)
 
 	r.Route("/events", func(apiRouter chi.Router) {
 		apiRouter.Post(
@@ -227,6 +227,10 @@ func EventRouter(r chi.Router, ec controllers.EventController, es app.EventServi
 			ec.FindAll(),
 		)
 
+		apiRouter.With(rOpom).Get(
+			"/{roomId}",
+			ec.GetPowerConsumptionByRoom(),
+		)
 	})
 }
 

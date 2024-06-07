@@ -54,7 +54,7 @@ func New(conf config.Configuration) (Container, error) {
 	roomRepository := database.NewRoomRepository(sess)
 	deviceRepository := database.NewDeviceRepository(sess)
 	measurementRepository := database.NewMeasurementRepository(sess)
-	eventRepository := database.NewEventRepository(sess)
+	eventRepository := database.NewEventRepository(sess, deviceRepository)
 
 	userService := app.NewUserService(userRepository)
 	authService := app.NewAuthService(sessionRepository, userRepository, tknAuth, conf.JwtTTL)
@@ -65,7 +65,7 @@ func New(conf config.Configuration) (Container, error) {
 	}
 	deviceService := app.NewDeviceService(deviceRepository, measurementRepository, eventRepository)
 	measurementService := app.NewMeasurementService(measurementRepository)
-	eventService := app.NewEventService(eventRepository)
+	eventService := app.NewEventService(eventRepository, deviceRepository)
 
 	authController := controllers.NewAuthController(authService, userService)
 	userController := controllers.NewUserController(userService, authService)
@@ -73,7 +73,7 @@ func New(conf config.Configuration) (Container, error) {
 	roomController := controllers.NewRoomController(roomService, organizationService)
 	deviceController := controllers.NewDeviceController(deviceService, roomService, organizationService)
 	measurementController := controllers.NewMeasurementController(measurementService, deviceService)
-	eventController := controllers.NewEventController(eventService)
+	eventController := controllers.NewEventController(eventService, deviceRepository)
 
 	authMiddleware := middlewares.AuthMiddleware(tknAuth, authService, userService)
 

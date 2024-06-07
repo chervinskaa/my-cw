@@ -23,18 +23,21 @@ type event struct {
 
 type EventRepository interface {
 	Save(de domain.Event) (domain.Event, error)
-	Find(id uint64) (domain.Event, error)
+	Find(id uint64) (interface{}, error)
 	FindByDeviceId(deviceId uint64) ([]domain.Event, error)
 	FindAll() ([]domain.Event, error)
+	FindByRoomAndDate(roomID uint64, startDate, endDate time.Time) ([]domain.Event, error)
 }
 
 type eventRepository struct {
-	coll db.Collection
+	coll       db.Collection
+	deviceRepo DeviceRepository
 }
 
-func NewEventRepository(sess db.Session) EventRepository {
+func NewEventRepository(sess db.Session, deviceRepo DeviceRepository) EventRepository {
 	return &eventRepository{
-		coll: sess.Collection(EventsTableName),
+		coll:       sess.Collection(EventsTableName),
+		deviceRepo: deviceRepo,
 	}
 }
 
@@ -70,7 +73,7 @@ func (r *eventRepository) Save(de domain.Event) (domain.Event, error) {
 	return de, nil
 }
 
-func (r *eventRepository) Find(id uint64) (domain.Event, error) {
+func (r *eventRepository) Find(id uint64) (interface{}, error) {
 	var eventModel event
 	err := r.coll.Find(db.Cond{"id": id, "deleted_date": nil}).One(&eventModel)
 	if err != nil {
@@ -92,6 +95,19 @@ func (r *eventRepository) FindAll() ([]domain.Event, error) {
 func (r *eventRepository) FindByDeviceId(deviceId uint64) ([]domain.Event, error) {
 	var events []event
 	err := r.coll.Find(db.Cond{"device_id": deviceId, "deleted_date": nil}).All(&events)
+	if err != nil {
+		return nil, err
+	}
+	return r.mapModelToDomainCollection(events), nil
+}
+
+func (r *eventRepository) FindByRoomAndDate(roomID uint64, startDate, endDate time.Time) ([]domain.Event, error) {
+	var events []event
+	err := r.coll.Find(db.Cond{
+		"room_id":      roomID,
+		"created_date": db.Between(startDate, endDate),
+		"deleted_date": nil,
+	}).All(&events)
 	if err != nil {
 		return nil, err
 	}

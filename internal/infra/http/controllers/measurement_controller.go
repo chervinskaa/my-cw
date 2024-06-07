@@ -96,7 +96,7 @@ func (c *MeasurementController) FindByDeviceAndDate() http.HandlerFunc {
 		}
 
 		endDateStr := r.URL.Query().Get("endDate")
-		log.Printf("Received endDateStr: %s", endDateStr) // Add log here
+		log.Printf("Received endDateStr: %s", endDateStr)
 		if endDateStr == "" {
 			http.Error(w, "Invalid end_date", http.StatusBadRequest)
 			return

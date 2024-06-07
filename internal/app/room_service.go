@@ -30,8 +30,6 @@ func NewRoomService(rr database.RoomRepository, or database.OrganizationReposito
 		return nil, errors.New("organization repository is nil")
 	}
 
-	log.Printf("NewRoomService: room repository and organization repository are initialized")
-
 	return &roomService{
 		roomRepo:   rr,
 		orgRepo:    or,
