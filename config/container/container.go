@@ -65,7 +65,7 @@ func New(conf config.Configuration) (Container, error) {
 	}
 	deviceService := app.NewDeviceService(deviceRepository, measurementRepository, eventRepository)
 	measurementService := app.NewMeasurementService(measurementRepository)
-	eventService := app.NewEventService(eventRepository, deviceRepository)
+	eventService := app.NewEventService(eventRepository, deviceRepository, roomRepository)
 
 	authController := controllers.NewAuthController(authService, userService)
 	userController := controllers.NewUserController(userService, authService)

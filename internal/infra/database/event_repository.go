@@ -24,8 +24,8 @@ type event struct {
 type EventRepository interface {
 	Save(de domain.Event) (domain.Event, error)
 	Find(id uint64) (interface{}, error)
-	FindByDeviceId(deviceId uint64) ([]domain.Event, error)
 	FindAll() ([]domain.Event, error)
+	FindByDeviceId(deviceId uint64) ([]domain.Event, error)
 	FindByRoomAndDate(roomID uint64, startDate, endDate time.Time) ([]domain.Event, error)
 }
 

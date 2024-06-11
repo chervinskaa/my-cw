@@ -99,52 +99,6 @@ func (c *EventController) FindAll() http.HandlerFunc {
 	}
 }
 
-func (c *EventController) GetTotalPowerConsumption() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		orgIDParam := chi.URLParam(r, "orgId")
-		startDateParam := r.URL.Query().Get("startDate")
-		endDateParam := r.URL.Query().Get("endDate")
-
-		// Логування для перевірки значень параметрів
-		log.Printf("Received organization_id: %s", orgIDParam)
-		log.Printf("Received startDate: %s", startDateParam)
-		log.Printf("Received endDate: %s", endDateParam)
-
-		orgID, err := strconv.ParseUint(orgIDParam, 10, 64)
-		if err != nil {
-			log.Printf("EventController: Error parsing organization ID: %v", err)
-			http.Error(w, "Invalid organization ID", http.StatusBadRequest)
-			return
-		}
-
-		startDate, err := time.Parse("2006-01-02", startDateParam)
-		if err != nil {
-			log.Printf("EventController: Error parsing start date: %v", err)
-			http.Error(w, "Invalid start date", http.StatusBadRequest)
-			return
-		}
-
-		endDate, err := time.Parse("2006-01-02", endDateParam)
-		if err != nil {
-			log.Printf("EventController: Error parsing end date: %v", err)
-			http.Error(w, "Invalid end date", http.StatusBadRequest)
-			return
-		}
-
-		totalPowerConsumption, err := c.eventService.GetTotalPowerConsumption(orgID, startDate, endDate)
-		if err != nil {
-			log.Printf("EventController: Error calculating total power consumption: %v", err)
-			http.Error(w, "Failed to calculate total power consumption", http.StatusInternalServerError)
-			return
-		}
-
-		response := map[string]float64{"total_power_consumption": totalPowerConsumption}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	}
-}
-
 func (c *EventController) GetPowerConsumptionByRoom() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		roomIDParam := chi.URLParam(r, "roomId")

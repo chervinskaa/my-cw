@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"log"
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
@@ -23,13 +22,6 @@ type roomService struct {
 }
 
 func NewRoomService(rr database.RoomRepository, or database.OrganizationRepository, dr database.DeviceRepository) (RoomService, error) {
-	if rr == nil {
-		return nil, errors.New("room repository is nil")
-	}
-	if or == nil {
-		return nil, errors.New("organization repository is nil")
-	}
-
 	return &roomService{
 		roomRepo:   rr,
 		orgRepo:    or,

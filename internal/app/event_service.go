@@ -18,12 +18,14 @@ type EventService interface {
 type eventService struct {
 	eventRepo  database.EventRepository
 	deviceRepo database.DeviceRepository
+	roomRepo   database.RoomRepository
 }
 
-func NewEventService(eventRepo database.EventRepository, deviceRepo database.DeviceRepository) EventService {
+func NewEventService(er database.EventRepository, dr database.DeviceRepository, rr database.RoomRepository) EventService {
 	return &eventService{
-		eventRepo:  eventRepo,
-		deviceRepo: deviceRepo,
+		eventRepo:  er,
+		deviceRepo: dr,
+		roomRepo:   rr,
 	}
 }
 
@@ -133,7 +135,6 @@ func (s *eventService) calculatePowerConsumption(events []domain.Event, startDat
 	return totalPowerConsumption, nil
 }
 
-// Допоміжні функції для визначення мінімального та максимального часу
 func minTime(a, b time.Time) time.Time {
 	if a.Before(b) {
 		return a

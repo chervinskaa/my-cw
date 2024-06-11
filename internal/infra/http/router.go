@@ -214,7 +214,7 @@ func MeasurementRouter(r chi.Router, cm controllers.MeasurementController, ms ap
 }
 
 func EventRouter(r chi.Router, ec controllers.EventController, es app.EventService, os app.OrganizationService, rs app.RoomService) {
-	opom := middlewares.PathObject("orgId", controllers.OrgKey, os)
+	// opom := middlewares.PathObject("orgId", controllers.OrgKey, os)
 	rOpom := middlewares.PathObject("roomId", controllers.RoKey, rs)
 
 	r.Route("/events", func(apiRouter chi.Router) {
@@ -226,7 +226,10 @@ func EventRouter(r chi.Router, ec controllers.EventController, es app.EventServi
 			"/",
 			ec.FindAll(),
 		)
-
+		// apiRouter.With(opom).Get(
+		// 	"/{orgId}",
+		// 	ec.GetTotalPowerConsumptionForOrg(),
+		// )
 		apiRouter.With(rOpom).Get(
 			"/{roomId}",
 			ec.GetPowerConsumptionByRoom(),
